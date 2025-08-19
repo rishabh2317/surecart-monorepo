@@ -2,7 +2,6 @@
   "name": "surecart-backend",
   "version": "1.0.0",
   "description": "",
-  "type": "module",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -33,4 +32,8 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^24.2.0"
   }
-}
+ }
+ 
+ 
+ 
+ 
