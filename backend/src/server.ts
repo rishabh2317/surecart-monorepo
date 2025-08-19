@@ -27,6 +27,12 @@ server.get('/dashboard/:userId/analytics', async (request, reply) => {
         // --- 1. Fetch Real Data ---
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const clicksByDay = await prisma.click.groupBy({
+            by: ['createdAt'],
+            where: { collection: { userId: userId }, createdAt: { gte: sevenDaysAgo } },
+            _count: { id: true },
+            orderBy: { createdAt: 'asc' }
+        });
 
         const collections = await prisma.collection.findMany({
             where: { userId },
@@ -601,14 +607,16 @@ server.get('/products/search', async (request, reply) => {
                     contains: q || '',
                     mode: 'insensitive',
                 },
-                // This is the new filter logic
-                brandId: brandId || undefined,
+                // This is the FIX: Only add brandId to the query if it exists
+                ...(brandId && { brandId: brandId })
             },
             include: { brand: true },
         });
+
         const response = products.map(p => ({
             id: p.id,
             name: p.name,
+            // This is the FIX: Safely access the brand name
             brand: p.brand?.name || 'Unknown Brand',
             imageUrl: p.imageUrls[0],
         }));
@@ -695,7 +703,11 @@ server.get('/public/explore', async (request, reply) => {
 });
 
 server.get('/public/collections/:username/:slug', async (request, reply) => {
-    const { username, slug } = request.params as any;
+    const { username, slug } = request.params as { username?: string, slug?: string };
+
+if (!username || !slug) {
+    return reply.code(400).send({ message: "Username and slug are required." });
+}
     try {
         const collection = await prisma.collection.findFirst({
             where: { user: { username }, slug },
