@@ -16,7 +16,7 @@ server.register(cors, {
     origin: '*', // In production, you would change this to your frontend's domain
     methods: ['GET', 'POST', 'PUT', 'DELETE'], // Explicitly allow the DELETE method
   });
-// --- NEW ANALYTICS ENDPOINT ---
+// --- NEW ANALYTICS ENDPOINT -
 // Find and replace the existing /dashboard/:userId/analytics route
 
 // Find and replace the entire /dashboard/:userId/analytics route with this version
