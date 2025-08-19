@@ -1,22 +1,26 @@
 // src/server.ts
-import Fastify from 'fastify';
-import cors from '@fastify/cors';
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcrypt';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-
+// Converted to CommonJS requires for compatibility with tsconfig.module = "commonjs"
+const Fastify = require('fastify');
+const cors = require('@fastify/cors');
+const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcrypt');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const server = Fastify({ logger: true });
 const prisma = new PrismaClient();
+const PORT = Number(process.env.PORT ?? 3000);
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? "";
+const SALT_ROUNDS = 10; // ensure SALT_ROUNDS exists
+
 const SALT_ROUNDS = 10;
 // Add this at the top of your server.ts file, with other variables
 let aiApiCallCount = 0;
-const AI_API_CALL_LIMIT = 10; // Our own internal monthly limit
+const AI_API_CALL_LIMIT = 50; // Our own internal monthly limit
 
 server.register(cors, { 
     origin: '*', // In production, you would change this to your frontend's domain
     methods: ['GET', 'POST', 'PUT', 'DELETE'], // Explicitly allow the DELETE method
   });
-// --- NEW ANALYTICS ENDPOINT -
+// --- NEW ANALYTICS ENDPOINT ---
 // Find and replace the existing /dashboard/:userId/analytics route
 
 // Find and replace the entire /dashboard/:userId/analytics route with this version
@@ -393,11 +397,11 @@ server.post('/products/ask-ai', async (request, reply) => {
         return reply.code(429).send({ message: "This feature is temporarily unavailable due to high demand. Please try again later." });
     }
     // This is a critical check for production
-    if (!(process.env.GEMINI_API_KEY ?? "")) {
+    if (!process.env.GEMINI_API_KEY) {
         return reply.code(500).send({ message: "AI service is not configured." });
     }
     
-    const genAI = new GoogleGenerativeAI((process.env.GEMINI_API_KEY ?? ""));
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash"});
 
     const prompt = `You are a helpful e-commerce assistant. Your goal is to provide a balanced and concise summary of public reviews for a product. Based on common knowledge and reviews for the product "${productName}", provide a summary with: 
@@ -532,12 +536,12 @@ server.put('/collections/:id', async (request, reply) => {
 });
 // GET /brands/:brandId/dashboard
 server.get('/brands/:brandId/dashboard', async (request, reply) => {
-    const { brandId } = request.params as { ...( string ? { brandId: string } : {} ) };
+    const { brandId } = request.params as { brandId: string };
     try {
         // Find all collections that feature this brand's products
         const collectionsWithBrandProducts = await prisma.collection.findMany({
             where: {
-                products: { some: { product: { ...( brandId ? { brandId: brandId } : {} ) } } }
+                products: { some: { product: { brandId: brandId } } }
             },
             include: {
                 user: true, // The creator of the collection
@@ -608,7 +612,7 @@ server.get('/products/search', async (request, reply) => {
                     mode: 'insensitive',
                 },
                 // This is the FIX: Only add brandId to the query if it exists
-                ...(brandId && { ...( brandId ? { brandId: brandId } : {} ) })
+                ...(brandId && { brandId: brandId })
             },
             include: { brand: true },
         });
@@ -755,6 +759,6 @@ server.get('/redirect', async (request, reply) => {
 
 // --- Start Server ---
 const start = async () => {
-  try { await server.listen({ port: { port: 3001 }, host: "0.0.0.0" }); } catch (err) { server.log.error(err); process.exit(1); }
+  try { await server.listen({ port: PORT, host: '0.0.0.0' }); server.log.info(`🚀 Server running on port ${PORT}`); } catch (err) { server.log.error(err); process.exit(1); }
 };
 start();
