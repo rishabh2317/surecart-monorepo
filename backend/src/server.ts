@@ -1,3 +1,4 @@
+import type { FastifyRequest, FastifyReply } from 'fastify';
 // src/server.ts
 // Converted to CommonJS requires for compatibility with tsconfig.module = "commonjs"
 const Fastify = require('fastify');
@@ -25,7 +26,7 @@ server.register(cors, {
 
 // Find and replace the entire /dashboard/:userId/analytics route with this version
 
-server.get('/dashboard/:userId/analytics', async (request, reply) => {
+server.get('/dashboard/:userId/analytics', async (request: FastifyRequest, reply: FastifyReply) => {
     const { userId } = request.params as { userId: string };
     try {
         // --- 1. Fetch Real Data ---
@@ -68,16 +69,16 @@ server.get('/dashboard/:userId/analytics', async (request, reply) => {
             dateMap.set(key, { Clicks: 0, Likes: 0, Engagements: 0 });
         }
 
-        clicksByDayRaw.forEach(row => {
+        clicksByDayRaw.forEach(row=> {
             const key = new Date(row.createdAt).toISOString().split('T')[0];
             if (dateMap.has(key)) dateMap.get(key)!.Clicks += row._count._all;
         });
-        likesByDayRaw.forEach(row => {
+        likesByDayRaw.forEach(row=> {
             const key = new Date(row.createdAt).toISOString().split('T')[0];
             if (dateMap.has(key)) dateMap.get(key)!.Likes += row._count._all;
         });
         
-        dateMap.forEach(value => value.Engagements = value.Clicks + value.Likes);
+        dateMap.forEach(value=> value.Engagements = value.Clicks + value.Likes);
 
         const performanceOverTime = Array.from(dateMap.entries()).map(([date, metrics]) => ({ 
             date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), 
@@ -85,13 +86,13 @@ server.get('/dashboard/:userId/analytics', async (request, reply) => {
         }));
 
         // --- 4. Calculate Summary and Top Collections ---
-        const totalClicks = collections.reduce((sum, col) => sum + col._count.clicks, 0);
-        const totalLikes = collections.reduce((sum, col) => sum + col._count.likedBy, 0);
+        const totalClicks = collections.reduce((sum: any, col: any) => sum + col._count.clicks, 0);
+        const totalLikes = collections.reduce((sum: any, col: any) => sum + col._count.likedBy, 0);
         
-        const topCollections = collections.map(c => ({
+        const topCollections = collections.map(c=> ({
             id: c.id, name: c.name, clicks: c._count.clicks, likes: c._count.likedBy,
             shares: Math.floor(c._count.clicks / 10 + c._count.likedBy * 2),
-        })).sort((a, b) => b.clicks - a.clicks).slice(0, 5);
+        })).sort((a: any, b: any) => b.clicks - a.clicks).slice(0, 5);
 
         // --- 5. Send Final Payload ---
         reply.send({
@@ -119,7 +120,7 @@ const mockProducts = [
 ];
 
 // --- AUTHENTICATION ROUTES ---
-server.post('/register', async (request, reply) => {
+server.post('/register', async (request: FastifyRequest, reply: FastifyReply) => {
   const { email, password, username, role = 'CREATOR' } = request.body as any;
   if (!email || !password || !username) return reply.code(400).send({ message: 'All fields are required.' });
   try {
@@ -133,7 +134,7 @@ server.post('/register', async (request, reply) => {
   }
 });
 
-server.post('/login', async (request, reply) => {
+server.post('/login', async (request: FastifyRequest, reply: FastifyReply) => {
     const { email, password } = request.body as any;
     if (!email || !password) return reply.code(400).send({ message: 'Email and password are required.' });
     try {
@@ -146,7 +147,7 @@ server.post('/login', async (request, reply) => {
     } catch (error) { server.log.error(error); reply.code(500).send({ message: 'Server error.' }); }
 });
 // POST /auth/social
-server.post('/auth/social', async (request, reply) => {
+server.post('/auth/social', async (request: FastifyRequest, reply: FastifyReply) => {
     const { email, username, authProviderId, profileImageUrl } = request.body as any;
 
     if (!email || !authProviderId || !username) {
@@ -174,7 +175,7 @@ server.post('/auth/social', async (request, reply) => {
     }
 });
 
-server.put('/users/:userId/upgrade-to-creator', async (request, reply) => {
+server.put('/users/:userId/upgrade-to-creator', async (request: FastifyRequest, reply: FastifyReply) => {
     const { userId } = request.params as { userId: string };
     const { fullName, phone, instagramHandle, profileImageUrl } = request.body as any;
 
@@ -198,7 +199,7 @@ server.put('/users/:userId/upgrade-to-creator', async (request, reply) => {
 });
 
 // POST /brands/register
-server.post('/brands/register', async (request, reply) => {
+server.post('/brands/register', async (request: FastifyRequest, reply: FastifyReply) => {
     const { brandName, category, presence, website, email, name } = request.body as any;
 
     try {
@@ -237,7 +238,7 @@ server.post('/brands/register', async (request, reply) => {
 });
 
 // --- SHOPPER ENGAGEMENT ROUTES ---
-server.post('/collections/:collectionId/like', async (request, reply) => {
+server.post('/collections/:collectionId/like', async (request: FastifyRequest, reply: FastifyReply) => {
     const { collectionId } = request.params as { collectionId: string };
     const { userId } = request.body as { userId: string };
     if (!userId) return reply.code(400).send({ message: "User ID is required." });
@@ -250,7 +251,7 @@ server.post('/collections/:collectionId/like', async (request, reply) => {
     }
 });
 
-server.delete('/collections/:collectionId/unlike', async (request, reply) => {
+server.delete('/collections/:collectionId/unlike', async (request: FastifyRequest, reply: FastifyReply) => {
     const { collectionId } = request.params as { collectionId: string };
     const { userId } = request.body as { userId: string };
     if (!userId) return reply.code(400).send({ message: "User ID is required." });
@@ -262,7 +263,7 @@ server.delete('/collections/:collectionId/unlike', async (request, reply) => {
 
 // --- FOLLOW / UNFOLLOW ROUTES ---
 
-server.post('/users/:creatorId/follow', async (request, reply) => {
+server.post('/users/:creatorId/follow', async (request: FastifyRequest, reply: FastifyReply) => {
     const { creatorId } = request.params as { creatorId: string };
     const { userId } = request.body as { userId: string }; // The user who is doing the following
     
@@ -285,7 +286,7 @@ server.post('/users/:creatorId/follow', async (request, reply) => {
     }
 });
 
-server.delete('/users/:creatorId/unfollow', async (request, reply) => {
+server.delete('/users/:creatorId/unfollow', async (request: FastifyRequest, reply: FastifyReply) => {
     const { creatorId } = request.params as { creatorId: string };
     const { userId } = request.body as { userId: string };
     
@@ -307,7 +308,7 @@ server.delete('/users/:creatorId/unfollow', async (request, reply) => {
     }
 });
 
-server.get('/users/:userId/follow-status/:creatorId', async (request, reply) => {
+server.get('/users/:userId/follow-status/:creatorId', async (request: FastifyRequest, reply: FastifyReply) => {
     const { userId, creatorId } = request.params as { userId: string, creatorId: string };
     try {
         const follow = await prisma.follow.findUnique({ 
@@ -325,7 +326,7 @@ server.get('/users/:userId/follow-status/:creatorId', async (request, reply) => 
     }
 });
 
-server.post('/collections/:collectionId/comments', async (request, reply) => {
+server.post('/collections/:collectionId/comments', async (request: FastifyRequest, reply: FastifyReply) => {
     const { collectionId } = request.params as { collectionId: string };
     const { userId, text } = request.body as { userId: string, text: string };
     try {
@@ -337,7 +338,7 @@ server.post('/collections/:collectionId/comments', async (request, reply) => {
     } catch (error) { reply.code(500).send({ message: 'Error posting comment' }); }
 });
 
-server.get('/users/:userId/liked-status/:collectionId', async (request, reply) => {
+server.get('/users/:userId/liked-status/:collectionId', async (request: FastifyRequest, reply: FastifyReply) => {
     const { userId, collectionId } = request.params as { userId: string, collectionId: string };
     try {
         const like = await prisma.userLikes.findUnique({ where: { userId_collectionId: { userId, collectionId } } });
@@ -345,7 +346,7 @@ server.get('/users/:userId/liked-status/:collectionId', async (request, reply) =
     } catch (error) { server.log.error(error); reply.code(500).send({ message: "Error fetching like status" }); }
 });
 
-server.get('/users/:userId/likes', async (request, reply) => {
+server.get('/users/:userId/likes', async (request: FastifyRequest, reply: FastifyReply) => {
     const { userId } = request.params as { userId: string };
     try {
         const likedCollections = await prisma.userLikes.findMany({
@@ -363,7 +364,7 @@ server.get('/users/:userId/likes', async (request, reply) => {
                 } 
             }
         });
-        const response = likedCollections.map(like => ({
+        const response = likedCollections.map(like=> ({
             id: like.collection.id,
             name: like.collection.name,
             slug: like.collection.slug,
@@ -375,7 +376,7 @@ server.get('/users/:userId/likes', async (request, reply) => {
     } catch (error) { server.log.error(error); reply.code(500).send({ message: "Error fetching liked collections" }); }
 });
 // GET /collections/:collectionId/comments
-server.get('/collections/:collectionId/comments', async (request, reply) => {
+server.get('/collections/:collectionId/comments', async (request: FastifyRequest, reply: FastifyReply) => {
     const { collectionId } = request.params as { collectionId: string };
     try {
         const comments = await prisma.comment.findMany({
@@ -391,7 +392,7 @@ server.get('/collections/:collectionId/comments', async (request, reply) => {
 });
 
 // POST /products/ask-ai
-server.post('/products/ask-ai', async (request, reply) => {
+server.post('/products/ask-ai', async (request: FastifyRequest, reply: FastifyReply) => {
     const { productName } = request.body as { productName: string };
     if (aiApiCallCount >= AI_API_CALL_LIMIT) {
         return reply.code(429).send({ message: "This feature is temporarily unavailable due to high demand. Please try again later." });
@@ -423,7 +424,7 @@ Keep the language neutral and objective.`;
     }
 });
 // --- CREATOR DASHBOARD & COLLECTION MANAGEMENT ---
-server.get('/dashboard/:userId', async (request, reply) => {
+server.get('/dashboard/:userId', async (request: FastifyRequest, reply: FastifyReply) => {
     const { userId } = request.params as { userId: string };
     try {
         const user = await prisma.user.findUnique({ where: { id: userId } });
@@ -433,7 +434,7 @@ server.get('/dashboard/:userId', async (request, reply) => {
             where: { userId },
             include: { _count: { select: { products: true, likedBy: true } } }
         });
-        const responseData = collections.map(c => ({
+        const responseData = collections.map(c=> ({
             id: c.id, name: c.name, slug: c.slug, 
             productsCount: c._count.products,
             likes: c._count.likedBy,
@@ -444,7 +445,7 @@ server.get('/dashboard/:userId', async (request, reply) => {
     } catch (error) { reply.code(500).send({ message: "Error fetching dashboard data" }); }
 });
 
-server.get('/collections/:id', async (request, reply) => {
+server.get('/collections/:id', async (request: FastifyRequest, reply: FastifyReply) => {
     const { id } = request.params as { id: string };
     try {
         const collection = await prisma.collection.findUnique({
@@ -454,13 +455,13 @@ server.get('/collections/:id', async (request, reply) => {
         if (!collection) return reply.code(404).send({ message: "Collection not found" });
         const response = {
             id: collection.id, name: collection.name,
-            products: collection.products.map(cp => ({ id: cp.product.id, name: cp.product.name, imageUrl: cp.product.imageUrls[0], brand: cp.product.brand?.name || "Brand" }))
+            products: collection.products.map(cp=> ({ id: cp.product.id, name: cp.product.name, imageUrl: cp.product.imageUrls[0], brand: cp.product.brand?.name || "Brand" }))
         };
         reply.send(response);
     } catch (error) { server.log.error(error); reply.code(500).send({ message: "Error fetching collection details" }); }
 });
 
-server.post('/collections', async (request, reply) => {
+server.post('/collections', async (request: FastifyRequest, reply: FastifyReply) => {
     let { name, products, userId, description, coverImageUrl } = request.body as any;
     try {
         // --- VALIDATION STEP ---
@@ -493,7 +494,7 @@ server.post('/collections', async (request, reply) => {
     }
 });
 
-server.delete('/collections/:id', async (request, reply) => {
+server.delete('/collections/:id', async (request: FastifyRequest, reply: FastifyReply) => {
     const { id } = request.params as { id: string };
     try {
         await prisma.collectionProduct.deleteMany({ where: { collectionId: id } });
@@ -504,7 +505,7 @@ server.delete('/collections/:id', async (request, reply) => {
     } catch (error) { server.log.error(error); reply.code(500).send({ message: "Error deleting collection" }); }
 });
 // PUT /collections/:id
-server.put('/collections/:id', async (request, reply) => {
+server.put('/collections/:id', async (request: FastifyRequest, reply: FastifyReply) => {
     const { id } = request.params as { id: string };
     const { name, products } = request.body as any; // Add description, coverImageUrl etc. as needed
 
@@ -535,7 +536,7 @@ server.put('/collections/:id', async (request, reply) => {
     }
 });
 // GET /brands/:brandId/dashboard
-server.get('/brands/:brandId/dashboard', async (request, reply) => {
+server.get('/brands/:brandId/dashboard', async (request: FastifyRequest, reply: FastifyReply) => {
     const { brandId } = request.params as { brandId: string };
     try {
         // Find all collections that feature this brand's products
@@ -549,15 +550,15 @@ server.get('/brands/:brandId/dashboard', async (request, reply) => {
             }
         });
 
-        const totalClicks = collectionsWithBrandProducts.reduce((sum, col) => sum + col._count.clicks, 0);
+        const totalClicks = collectionsWithBrandProducts.reduce((sum: any, col: any) => sum + col._count.clicks, 0);
         
-        const topCreators = collectionsWithBrandProducts.map(col => ({
+        const topCreators = collectionsWithBrandProducts.map(col=> ({
             id: col.user.id,
             username: col.user.username,
             profileImageUrl: col.user.profileImageUrl,
             collectionName: col.name,
             clicks: col._count.clicks,
-        })).sort((a, b) => b.clicks - a.clicks).slice(0, 5); // Top 5
+        })).sort((a: any, b: any) => b.clicks - a.clicks).slice(0, 5); // Top 5
 
         reply.send({
             summary: {
@@ -574,7 +575,7 @@ server.get('/brands/:brandId/dashboard', async (request, reply) => {
 });
 // GET /users/:userId/rewards
 // GET /users/:userId/rewards
-server.get('/users/:userId/rewards', async (request, reply) => {
+server.get('/users/:userId/rewards', async (request: FastifyRequest, reply: FastifyReply) => {
     const { userId } = request.params as { userId: string };
     try {
         const coupons = await prisma.coupon.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } });
@@ -586,8 +587,8 @@ server.get('/users/:userId/rewards', async (request, reply) => {
 
         // Calculate the wallet balance from approved transactions
         const balance = transactions
-            .filter(t => t.status === 'APPROVED')
-            .reduce((sum, t) => sum + t.amount, 0);
+            .filter(t=> t.status === 'APPROVED')
+            .reduce((sum: any, t: any) => sum + t.amount, 0);
 
         const wallet = {
             balance: balance,
@@ -602,7 +603,7 @@ server.get('/users/:userId/rewards', async (request, reply) => {
 });
 
 // --- PUBLIC & UNIVERSAL ROUTES ---
-server.get('/products/search', async (request, reply) => {
+server.get('/products/search', async (request: FastifyRequest, reply: FastifyReply) => {
     const { q, brandId } = request.query as { q?: string, brandId?: string };
     try {
         const products = await prisma.product.findMany({
@@ -617,7 +618,7 @@ server.get('/products/search', async (request, reply) => {
             include: { brand: true },
         });
 
-        const response = products.map(p => ({
+        const response = products.map(p=> ({
             id: p.id,
             name: p.name,
             // This is the FIX: Safely access the brand name
@@ -632,7 +633,7 @@ server.get('/products/search', async (request, reply) => {
 });
 
 // POST /public/collections/:collectionId/view
-server.post('/public/collections/:collectionId/view', async (request, reply) => {
+server.post('/public/collections/:collectionId/view', async (request: FastifyRequest, reply: FastifyReply) => {
     const { collectionId } = request.params as { collectionId: string };
     const { userId } = request.body as { userId?: string }; // userId is optional
 
@@ -651,7 +652,7 @@ server.post('/public/collections/:collectionId/view', async (request, reply) => 
 });
 
 // GET /brands
-server.get('/brands', async (request, reply) => {
+server.get('/brands', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
         const brands = await prisma.brand.findMany({
             orderBy: { name: 'asc' }
@@ -663,7 +664,7 @@ server.get('/brands', async (request, reply) => {
     }
 });
 // NEW: This powers the Pinterest-style infinite feed on the homepage
-server.get('/public/home', async (request, reply) => {
+server.get('/public/home', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
         const collections = await prisma.collection.findMany({
             take: 50, // A reasonable limit for the initial feed
@@ -673,7 +674,7 @@ server.get('/public/home', async (request, reply) => {
                 products: { take: 1, orderBy: { displayOrder: 'asc' }, include: { product: { select: { imageUrls: true } } } }
             }
         });
-        const response = collections.map(c => ({
+        const response = collections.map(c=> ({
             id: c.id, name: c.name, slug: c.slug, author: c.user.username,
             authorAvatar: c.user.profileImageUrl || `https://placehold.co/100x100/E2E8F0/475569?text=${c.user.username.charAt(0).toUpperCase()}`,
             coverImage: c.coverImageUrl || c.products[0]?.product.imageUrls[0] || `https://placehold.co/400x300/cccccc/333333?text=${encodeURIComponent(c.name)}`
@@ -686,7 +687,7 @@ server.get('/public/home', async (request, reply) => {
 });
 
 // NEW: This now powers the categorized Explore page
-server.get('/public/explore', async (request, reply) => {
+server.get('/public/explore', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
         const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
         const mapCollection = (c: any) => ({
@@ -697,16 +698,16 @@ server.get('/public/explore', async (request, reply) => {
         const newCollections = await prisma.collection.findMany({
             where: { createdAt: { gte: sevenDaysAgo } }, take: 5, orderBy: { createdAt: 'desc' },
             include: { user: true, products: { take: 1, orderBy: { displayOrder: 'asc' }, include: { product: true } } }
-        }).then(res => res.map(mapCollection));
+        }).then(res=> res.map(mapCollection));
         const trendingCollections = await prisma.collection.findMany({
             take: 5, orderBy: { likedBy: { _count: 'desc' } },
             include: { user: true, products: { take: 1, orderBy: { displayOrder: 'asc' }, include: { product: true } } }
-        }).then(res => res.map(mapCollection));
+        }).then(res=> res.map(mapCollection));
         reply.send({ new: newCollections, trending: trendingCollections });
     } catch (error) { server.log.error(error); reply.code(500).send({ message: "Error fetching explore data" }); }
 });
 
-server.get('/public/collections/:username/:slug', async (request, reply) => {
+server.get('/public/collections/:username/:slug', async (request: FastifyRequest, reply: FastifyReply) => {
     const { username, slug } = request.params as { username?: string, slug?: string };
 
 if (!username || !slug) {
@@ -721,13 +722,13 @@ if (!username || !slug) {
         const publicCollection = {
             id: collection.id, name: collection.name, description: collection.description,
             author: collection.user.username, authorId: collection.user.id, authorAvatar: collection.user.profileImageUrl || `https://placehold.co/100x100/E2E8F0/475569?text=${collection.user.username.charAt(0).toUpperCase()}`,
-            products: collection.products.map(cp => ({ id: cp.product.id, name: cp.product.name, imageUrl: cp.product.imageUrls[0], brand: cp.product.brand?.name || "Brand", buyUrl: `http://localhost:3001/redirect?collectionId=${collection.id}&productId=${cp.product.id}&affiliateUrl=${encodeURIComponent(cp.product.baseUrl)}` }))
+            products: collection.products.map(cp=> ({ id: cp.product.id, name: cp.product.name, imageUrl: cp.product.imageUrls[0], brand: cp.product.brand?.name || "Brand", buyUrl: `http://localhost:3001/redirect?collectionId=${collection.id}&productId=${cp.product.id}&affiliateUrl=${encodeURIComponent(cp.product.baseUrl)}` }))
         };
         reply.send(publicCollection);
     } catch (error) { server.log.error(error); reply.code(500).send({ message: "Error fetching public collection" }); }
 });
 
-server.get('/redirect', async (request, reply) => {
+server.get('/redirect', async (request: FastifyRequest, reply: FastifyReply) => {
     const { collectionId, productId, affiliateUrl } = request.query as any;
     const decodedUrl = decodeURIComponent(affiliateUrl);
 
