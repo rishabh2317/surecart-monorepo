@@ -393,11 +393,11 @@ server.post('/products/ask-ai', async (request, reply) => {
         return reply.code(429).send({ message: "This feature is temporarily unavailable due to high demand. Please try again later." });
     }
     // This is a critical check for production
-    if (!process.env.GEMINI_API_KEY) {
+    if (!(process.env.GEMINI_API_KEY ?? "")) {
         return reply.code(500).send({ message: "AI service is not configured." });
     }
     
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const genAI = new GoogleGenerativeAI((process.env.GEMINI_API_KEY ?? ""));
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash"});
 
     const prompt = `You are a helpful e-commerce assistant. Your goal is to provide a balanced and concise summary of public reviews for a product. Based on common knowledge and reviews for the product "${productName}", provide a summary with: 
@@ -532,12 +532,12 @@ server.put('/collections/:id', async (request, reply) => {
 });
 // GET /brands/:brandId/dashboard
 server.get('/brands/:brandId/dashboard', async (request, reply) => {
-    const { brandId } = request.params as { brandId: string };
+    const { brandId } = request.params as { ...( string ? { brandId: string } : {} ) };
     try {
         // Find all collections that feature this brand's products
         const collectionsWithBrandProducts = await prisma.collection.findMany({
             where: {
-                products: { some: { product: { brandId: brandId } } }
+                products: { some: { product: { ...( brandId ? { brandId: brandId } : {} ) } } }
             },
             include: {
                 user: true, // The creator of the collection
@@ -608,7 +608,7 @@ server.get('/products/search', async (request, reply) => {
                     mode: 'insensitive',
                 },
                 // This is the FIX: Only add brandId to the query if it exists
-                ...(brandId && { brandId: brandId })
+                ...(brandId && { ...( brandId ? { brandId: brandId } : {} ) })
             },
             include: { brand: true },
         });
@@ -755,6 +755,6 @@ server.get('/redirect', async (request, reply) => {
 
 // --- Start Server ---
 const start = async () => {
-  try { await server.listen({ port: 3001 }); } catch (err) { server.log.error(err); process.exit(1); }
+  try { await server.listen({ port: { port: 3001 }, host: "0.0.0.0" }); } catch (err) { server.log.error(err); process.exit(1); }
 };
 start();
