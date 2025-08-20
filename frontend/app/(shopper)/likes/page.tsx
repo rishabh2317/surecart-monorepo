@@ -67,7 +67,10 @@ export default function LikedCollectionsPage() {
 
     const { data: likedCollections = [], isLoading } = useQuery({
         queryKey: ['likedCollections', user?.id],
-        queryFn: () => getLikedCollections(user.id),
+        queryFn: () => {
+            if (!user) return Promise.resolve([]);
+            return getLikedCollections(user.id);
+        },
         enabled: !!user,
     });
 
