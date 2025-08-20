@@ -31,11 +31,12 @@ const StatCard = ({ title, value, icon: Icon }: any) => (
 
 // --- BRAND DASHBOARD ---
 const BrandDashboard = ({ user }: { user: any }) => {
+  const router = useRouter();
   const MOCK_BRAND_ID = user.brand?.id || "YOUR_BRAND_ID";
 
   useEffect(() => {
     if (user && user.role !== 'BRAND') router.push('/');
-  }, [user]);
+  }, [user, router]);
 
   const { data, isLoading } = useQuery({
     queryKey: ['brandDashboard', MOCK_BRAND_ID],
@@ -204,6 +205,13 @@ export default function UnifiedDashboardPage() {
     }
   }, [user, loading, router]);
 
+  // Handle shopper redirect in useEffect instead of JSX
+  useEffect(() => {
+    if (user && user.role === 'SHOPPER') {
+      router.push('/');
+    }
+  }, [user, router]);
+
   if (loading || !user) {
     return (
       <div className="flex items-center justify-center h-[80vh]">
@@ -212,12 +220,16 @@ export default function UnifiedDashboardPage() {
     );
   }
 
+  // If user is a shopper, don't render anything (they'll be redirected)
+  if (user.role === 'SHOPPER') {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-slate-50">
       <main className="container mx-auto p-4 sm:p-8">
         {user.role === 'CREATOR' && <CreatorDashboard user={user} />}
         {user.role === 'BRAND' && <BrandDashboard user={user} />}
-        {user.role === 'SHOPPER' && router.push('/')}
       </main>
     </div>
   );
