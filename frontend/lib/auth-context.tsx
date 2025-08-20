@@ -9,14 +9,21 @@ import { firebaseApp } from './firebase'; // Make sure you have this file with y
 
 const API_BASE_URL = 'http://localhost:3001';
 
+interface User {
+  id: string;
+  email: string;
+  username: string;
+  role: 'CREATOR' | 'SHOPPER' | 'BRAND';
+  profileImageUrl?: string;
+}
 interface AuthContextType {
-  user: any;
+  user: User | null;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   register: (data: any) => Promise<void>;
   logout: () => void;
-  updateUserSession: (newUser: any) => void;
+  updateUserSession: (newUser: User) => void;
   isAuthModalOpen: boolean;
   openAuthModal: (redirectPath?: string) => void;
   closeAuthModal: () => void;
@@ -25,7 +32,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAuthModalOpen, setAuthModalOpen] = useState(false);
   const [redirectPath, setRedirectPath] = useState<string | null>(null);

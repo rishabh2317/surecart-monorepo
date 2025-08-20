@@ -31,7 +31,7 @@ export default function ForCreatorsPage() {
            </p>
            <div className="mt-10">
                <Link href="/login?action=signup" className="text-xl inline-flex items-center justify-center px-10 py-5 font-semibold text-white bg-teal-500 rounded-lg shadow-md hover:bg-teal-600">
-                   Create Your First Collection (It's Free)
+               <Link href="/login?action=signup" className="text-xl ...">Create Your First Collection (It&apos;s Free)</Link>
                </Link>
            </div>
          </div>

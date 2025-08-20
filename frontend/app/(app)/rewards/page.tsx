@@ -116,7 +116,7 @@ export default function RewardsPage() {
                             </div>
                         ) : (
                             <div className="text-center py-16 border-2 border-dashed rounded-lg max-w-3xl mx-auto">
-                                <p className="text-slate-600">You don't have any coupons right now.</p>
+                                <p className="text-slate-600">You do not have any coupons right now.</p>
                             </div>
                         )}
                     </section>

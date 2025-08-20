@@ -1,12 +1,11 @@
 // app/(creator)/analytics/page.tsx
 'use client';
-
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { ArrowUpRight, MousePointerClick, Heart, Save, Users, Share2, UserPlus, Eye } from 'lucide-react';
+import { ArrowUpRight, MousePointerClick, Heart, Save, UserPlus, Eye } from 'lucide-react';
 import CreatorPageHeader from '@/components/creator/CreatorPageHeader';
 
 // --- API Function ---
@@ -16,8 +15,22 @@ const getAnalyticsData = async (userId: string) => {
     return res.json();
 };
 
+// --- Type Definitions ---
+interface AnalyticsData {
+    summary: {
+        totalAudience: number;
+        engagements: number;
+        totalClicks: number;
+        saves: number;
+        totalLikes: number;
+        followers: number;
+    };
+    performanceOverTime: Array<{ date: string; [key: string]: number }>;
+    topCollections: Array<{ id: string; name: string; clicks: number; likes: number; shares: number }>;
+}
+
 // --- Sub-Components for a clean structure ---
-const StatCard = ({ title, value, icon: Icon }: any) => (
+const StatCard = ({ title, value, icon: Icon }: { title: string, value: string | number, icon: React.ElementType }) => (
     <div className="bg-white p-6 rounded-xl shadow-sm">
         <div className="flex items-center justify-between"><p className="text-sm font-medium text-slate-600">{title}</p><Icon className="w-5 h-5 text-slate-400" /></div>
         <p className="mt-2 text-3xl font-bold text-slate-900">{value.toLocaleString()}</p>
@@ -34,7 +47,7 @@ export default function AnalyticsPage() {
         if (user && user.role !== 'CREATOR') router.push('/');
     }, [user, router]);
 
-    const { data: analytics, isLoading } = useQuery({
+    const { data: analytics, isLoading } = useQuery<AnalyticsData>({
         queryKey: ['analytics', user?.id],
         queryFn: () => getAnalyticsData(user.id),
         enabled: !!user,
@@ -103,14 +116,20 @@ export default function AnalyticsPage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {topCollections?.map((col: any) => (
-                                    <tr key={col.id} className="border-b last:border-b-0">
-                                        <td className="p-3 font-medium text-slate-800">{col.name}</td>
-                                        <td className="p-3 text-right text-slate-600">{col.clicks.toLocaleString()}</td>
-                                        <td className="p-3 text-right text-slate-600">{col.likes.toLocaleString()}</td>
-                                        <td className="p-3 text-right text-slate-600">{col.shares.toLocaleString()}</td>
+                                {topCollections && topCollections.length > 0 ? (
+                                    topCollections.map((col: { id: string; name: string; clicks: number; likes: number; shares: number; }) => (
+                                        <tr key={col.id} className="border-b last:border-b-0">
+                                            <td className="p-3 font-medium text-slate-800">{col.name}</td>
+                                            <td className="p-3 text-right text-slate-600">{col.clicks.toLocaleString()}</td>
+                                            <td className="p-3 text-right text-slate-600">{col.likes.toLocaleString()}</td>
+                                            <td className="p-3 text-right text-slate-600">{col.shares.toLocaleString()}</td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan={4} className="p-3 text-center text-slate-600">No collections available</td>
                                     </tr>
-                                ))}
+                                )}
                             </tbody>
                         </table>
                     </div>

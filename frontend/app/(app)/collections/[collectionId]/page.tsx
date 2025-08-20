@@ -2,9 +2,9 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { useParams, notFound, useRouter } from 'next/navigation';
+import { Edit } from 'lucide-react';
+import { useParams, notFound } from 'next/navigation';
 import Link from 'next/link';
-import { Edit, ExternalLink } from 'lucide-react';
 import CreatorPageHeader from '@/components/creator/CreatorPageHeader';
 
 const getCollection = async (collectionId: string) => {
@@ -41,15 +41,19 @@ export default function CreatorCollectionViewPage() {
              />
             <main className="container mx-auto p-8">
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                    {collection.products.map((product: any) => (
-                        <div key={product.id} className="bg-white p-4 rounded-xl shadow-sm group">
-                            <div className="aspect-square w-full bg-slate-100 rounded-lg overflow-hidden mb-4">
-                                <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                    {collection && collection.products && collection.products.length > 0 ? (
+                        collection.products.map((product: any) => (
+                            <div key={product.id} className="bg-white p-4 rounded-xl shadow-sm group">
+                                <div className="aspect-square w-full bg-slate-100 rounded-lg overflow-hidden mb-4">
+                                    <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                                </div>
+                                <h3 className="font-semibold text-slate-800 truncate">{product.name}</h3>
+                                <p className="text-sm text-slate-500">{product.brand}</p>
                             </div>
-                            <h3 className="font-semibold text-slate-800 truncate">{product.name}</h3>
-                            <p className="text-sm text-slate-500">{product.brand}</p>
-                        </div>
-                    ))}
+                        ))
+                    ) : (
+                        <div className="col-span-full text-center text-slate-500">No products available.</div>
+                    )}
                 </div>
             </main>
         </div>

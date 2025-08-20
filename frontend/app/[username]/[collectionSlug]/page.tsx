@@ -305,8 +305,8 @@ export default function PublicCollectionPage() {
             <header className="py-12 px-4 text-center bg-white border-b border-slate-200">
                 <div className="flex justify-center items-center mb-4"><img src={collection.authorAvatar} alt={collection.author} className="w-20 h-20 rounded-full shadow-lg" /></div>
                 <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">{collection.name}</h1>
-                <p className="mt-4 max-w-2xl mx-auto text-lg text-slate-700">A hand-picked collection by <span className="font-semibold text-teal-600">{collection.author}</span></p>
-                {collection.description && (<p className="mt-4 max-w-2xl mx-auto text-md text-slate-600 italic">"{collection.description}"</p>)}
+                <p className="mt-4 max-w-2xl mx-auto text-lg text-slate-700">A hand picked collection by <span className="font-semibold text-teal-600">{collection.author}</span></p>
+                {collection.description && (<p className="mt-4 max-w-2xl mx-auto text-md text-slate-600 italic">{collection.description}</p>)}
                 <div className="mt-6 flex flex-wrap justify-center items-center gap-2 sm:gap-4">
                 <button onClick={handleFollow} disabled={followMutation.isPending || unfollowMutation.isPending} className="flex items-center space-x-2 px-4 py-2 bg-white border rounded-full text-slate-700 hover:bg-slate-100">
     <UserPlus className={`w-5 h-5 ${isFollowing ? 'text-green-500' : 'text-blue-500'}`} />

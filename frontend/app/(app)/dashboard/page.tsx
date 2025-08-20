@@ -185,7 +185,7 @@ const CreatorDashboard = ({ user }: { user: any }) => {
       {collections.length === 0 && (
         <div className="text-center py-16 border-2 border-dashed rounded-lg">
           <h3 className="text-lg font-medium text-slate-900">No collections yet</h3>
-          <p className="mt-1 text-sm text-slate-500">Click "New Collection" to get started.</p>
+          <p className="mt-1 text-sm text-slate-500">Click New Collection to get started.</p>
         </div>
       )}
     </>

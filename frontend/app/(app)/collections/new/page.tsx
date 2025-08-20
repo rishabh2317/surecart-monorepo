@@ -2,13 +2,13 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import Link from 'next/link';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createCollection, searchProducts } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import { getUserSession } from '@/lib/auth';
 import CreatorPageHeader from '@/components/creator/CreatorPageHeader';
-import { ArrowLeft, Save, Check, Copy, X, UploadCloud, Edit, Search, Plus } from 'lucide-react';
+import {Check, Copy, X, UploadCloud, Edit, Search } from 'lucide-react';
+import { useMutation } from '@tanstack/react-query';
 
 // --- Types (from your original code) ---
 interface Product { id: string; name: string; brand: string; imageUrl: string; }
@@ -53,19 +53,20 @@ export default function NewCollectionPage() {
     queryFn: () => searchProducts(searchTerm, selectedBrand),
   });
 
-  const createCollectionMutation = useMutation({
-    mutationFn: createCollection,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['dashboard', user?.id] });
-      const slug = data.slug;
-      const username = user?.username || 'creator';
-      setShareableLink(`http://localhost:3000/${username}/${slug}`);
-      setShowModal(true);
-    },
-    onError: (error: any) => { 
-        alert(`Could not publish collection: ${error.message}`);
-    }
-  });
+
+    const createCollectionMutation = useMutation({
+      mutationFn: createCollection,
+      onSuccess: (data) => {
+        queryClient.invalidateQueries({ queryKey: ['dashboard', user?.id] });
+        const slug = data.slug;
+        const username = user?.username || 'creator';
+        setShareableLink(`http://localhost:3000/${username}/${slug}`);
+        setShowModal(true);
+      },
+      onError: (error: any) => { 
+          alert(`Could not publish collection: ${error.message}`);
+      }
+    });
 
   const handleCoverImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -90,7 +91,7 @@ export default function NewCollectionPage() {
           throw new Error(data.error?.message || 'Image upload failed');
         }
       } catch (error: any) {
-        alert(`Could not upload image: ${error.message}. Please ensure your ImgBB API key is correct.`);
+        alert(`Could not upload image: ${error.message || 'An unknown error occurred'}. Please ensure your ImgBB API key is correct.`);
       } finally {
         setIsUploading(false);
       }

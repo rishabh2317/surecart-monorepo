@@ -14,7 +14,7 @@ export default function TermsPage() {
           <div className="prose prose-slate max-w-none prose-p:text-slate-700 prose-a:text-teal-600 hover:prose-a:text-teal-700">
             <h2>1. Agreement to Terms</h2>
             <p>
-              By using our services ("Services"), you agree to be bound by these Terms. If you don’t agree to be bound by these Terms, do not use the Services. If you are accessing and using the Services on behalf of a company (such as your employer) or other legal entity, you represent and warrant that you have the authority to bind that entity to these Terms.
+              By using our services (Services), you agree to be bound by these Terms. If you do not agree to be bound by these Terms, do not use the Services. If you are accessing and using the Services on behalf of a company (such as your employer) or other legal entity, you represent and warrant that you have the authority to bind that entity to these Terms.
             </p>
 
             <h2>2. User Accounts</h2>
