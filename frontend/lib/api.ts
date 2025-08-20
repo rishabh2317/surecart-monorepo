@@ -1,6 +1,7 @@
 // lib/api.ts
 
-const API_BASE_URL = 'http://localhost:3001';
+// This is the public URL of your backend on Railway.
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
 // A helper function for fetching data
 async function fetcher(url: string, options?: RequestInit) {
