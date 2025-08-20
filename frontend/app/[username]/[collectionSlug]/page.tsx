@@ -179,18 +179,21 @@ export default function PublicCollectionPage() {
         enabled: !!user && !!collection,
     });
     
-    useQuery<{ isFollowing: boolean } | undefined, Error>({
+    const { data: followStatusData } = useQuery<{ isFollowing: boolean } | undefined, Error>({
         queryKey: ['followStatus', collection?.authorId, user?.id],
         queryFn: () => {
             if (!user) return Promise.resolve({ isFollowing: false });
             return getFollowStatus(collection.authorId, user.id);
         },
         enabled: !!user && !!collection,
-        onSuccess: (data: { isFollowing: boolean | ((prevState: boolean) => boolean); }) => {
-            if (data) setIsFollowing(data.isFollowing);
-        },
     });
     
+    // Handle the success with useEffect
+    useEffect(() => {
+        if (followStatusData) {
+            setIsFollowing(followStatusData.isFollowing);
+        }
+    }, [followStatusData]);
     const commentsQueryKey = ['comments', collection?.id];
     const { data: comments = [] } = useQuery({
         queryKey: commentsQueryKey,
@@ -289,8 +292,12 @@ export default function PublicCollectionPage() {
 
     const handlePostComment = (e: React.FormEvent) => {
         e.preventDefault();
-        if (collection && newComment.trim()) {
-            commentMutation.mutate({ collectionId: collection.id, userId: user.id, text: newComment });
+        if (collection && newComment.trim() && user) {
+            commentMutation.mutate({ 
+                collectionId: collection.id, 
+                userId: user.id, 
+                text: newComment 
+            });
         }
     };
 

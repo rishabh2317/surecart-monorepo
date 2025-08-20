@@ -23,7 +23,10 @@ server.register(cors, {
 
 
 // Find and replace the entire /dashboard/:userId/analytics route with this version
-
+// --- HEALTH CHECK ROUTE ---
+server.get('/health', async (request: any, reply: any) => {
+    return { status: 'ok' };
+});
 
 server.get('/dashboard/:userId/analytics', async (request, reply) => {
    const { userId } = request.params as { userId: string };

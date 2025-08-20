@@ -20,7 +20,7 @@ export default function ProductPickerModal({ isOpen, onClose, selectedProducts, 
 
     const { data: products = [], isLoading } = useQuery({
         queryKey: ['products', searchTerm],
-        queryFn: () => searchProducts(searchTerm),
+        queryFn: () => searchProducts(searchTerm, null),
     });
 
     if (!isOpen) return null;
