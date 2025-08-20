@@ -5,7 +5,20 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const server = Fastify({ logger: true });
+// Initialize server with better logging
+const server = Fastify({ 
+    logger: {
+      level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+      transport: process.env.NODE_ENV === 'development' ? {
+        target: 'pino-pretty',
+        options: {
+          translateTime: 'HH:MM:ss Z',
+          ignore: 'pid,hostname',
+        }
+      } : undefined
+    }
+  });
+  
 const prisma = new PrismaClient();
 const SALT_ROUNDS = 10;
 // Add this at the top of your server.ts file, with other variables
@@ -13,42 +26,56 @@ let aiApiCallCount = 0;
 const AI_API_CALL_LIMIT = 10; // Our own internal monthly limit
 
 
+// Enhanced CORS configuration
 server.register(cors, { 
     origin: (origin, cb) => {
-        // Allow requests with no origin (like mobile apps, curl, etc.)
-        if (!origin) return cb(null, true);
-        
-        const allowedOrigins = [
-            'https://surecart-monorepo.vercel.app',
-            'https://surecart-monorepo.vercel.app',
-            'http://localhost:3000',
-            'http://localhost:3001'
-        ];
-        
-        if (process.env.NODE_ENV === 'development') {
-            return cb(null, true); // Allow all in development
-        }
-        
-        if (allowedOrigins.includes(origin)) {
-            return cb(null, true);
-        }
-        
-        // Return an error if the origin is not allowed
-        return cb(new Error('Not allowed by CORS'), false);
+      if (!origin) return cb(null, true);
+      
+      const allowedOrigins = [
+        'https://surecart-monorepo.vercel.app',
+        'https://surecart-monorepo.vercel.app',
+        'http://localhost:3000',
+        'http://localhost:3001'
+      ];
+      
+      if (process.env.NODE_ENV === 'development') {
+        return cb(null, true);
+      }
+      
+      if (allowedOrigins.includes(origin)) {
+        return cb(null, true);
+      }
+      
+      return cb(new Error('Not allowed by CORS'), false);
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
     credentials: true
-});
+  });
 
 // Add OPTIONS handler for preflight requests
 server.options('/*', async (request, reply) => {
     reply.status(200).send();
 });
 // --- HEALTH CHECK ROUTE ---
-server.get('/health', async (request: any, reply: any) => {
-    return { status: 'ok' };
-});
+server.get('/health', async (request, reply) => {
+    try {
+      // Test database connection
+      await prisma.$queryRaw`SELECT 1`;
+      return { 
+        status: 'ok', 
+        database: 'connected',
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      server.log.error('Database health check failed:', error);
+      reply.status(500).send({ 
+        status: 'error', 
+        database: 'disconnected',
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
 
 server.get('/dashboard/:userId/analytics', async (request, reply) => {
    const { userId } = request.params as { userId: string };
@@ -842,21 +869,71 @@ server.get('/redirect', async (request, reply) => {
 });
 
 
-// World-Class Server Start Function
+// --- ENHANCED SERVER START FUNCTION ---
 const start = async () => {
     try {
-        const port = process.env.PORT || 3001;
-        await server.listen({ port: Number(port), host: '0.0.0.0' });
-        console.log(`Server running on port ${port}`);
-        console.log(`CORS configured for: ${process.env.NODE_ENV === 'production' 
-            ? 'https://surecart-monorepo.vercel.app' 
-            : 'all origins (development)'}`);
+      const port = process.env.PORT || 3001;
+      const host = '0.0.0.0'; // Critical for Railway
+  
+      server.log.info(`Starting server in ${process.env.NODE_ENV} mode`);
+      server.log.info(`Server will listen on ${host}:${port}`);
+  
+      // Test database connection before starting server
+      try {
+        await prisma.$connect();
+        server.log.info('Database connected successfully');
+      } catch (dbError) {
+        server.log.error('Database connection failed:', dbError);
+        throw new Error('Database connection failed');
+      }
+  
+      await server.listen({ port: Number(port), host });
+      
+      server.log.info(`✅ Server successfully started on ${host}:${port}`);
+      server.log.info(`🚀 Server is ready to accept connections`);
+      server.log.info(`🌐 CORS configured for: ${process.env.NODE_ENV === 'production' 
+        ? 'https://surecart-monorepo.vercel.app' 
+        : 'all origins (development)'}`);
+  
     } catch (err) {
-        server.log.error(err);
-        process.exit(1);
+      server.log.error('❌ Server startup failed:', err);
+      // Graceful shutdown
+      await prisma.$disconnect();
+      process.exit(1);
     }
-};
-
-start();
+  };
+  
+  // --- GRACEFUL SHUTDOWN HANDLING ---
+  const gracefulShutdown = async (signal: string) => {
+    server.log.info(`Received ${signal}, shutting down gracefully...`);
+    
+    try {
+      await server.close();
+      await prisma.$disconnect();
+      server.log.info('Server shut down successfully');
+      process.exit(0);
+    } catch (error) {
+      server.log.error('Error during shutdown:', error);
+      process.exit(1);
+    }
+  };
+  
+  // Handle different shutdown signals
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('unhandledRejection', (reason, promise) => {
+    server.log.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    process.exit(1);
+  });
+  process.on('uncaughtException', (error) => {
+    server.log.error('Uncaught Exception:', error);
+    process.exit(1);
+  });
+  
+  // --- START THE SERVER ---
+  start();
+  
+  // Export for testing purposes
+  export { server };
 
 
