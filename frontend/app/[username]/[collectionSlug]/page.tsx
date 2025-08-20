@@ -181,7 +181,10 @@ export default function PublicCollectionPage() {
     
     useQuery<{ isFollowing: boolean } | undefined, Error>({
         queryKey: ['followStatus', collection?.authorId, user?.id],
-        queryFn: () => getFollowStatus(collection.authorId, user.id),
+        queryFn: () => {
+            if (!user) return Promise.resolve({ isFollowing: false });
+            return getFollowStatus(collection.authorId, user.id);
+        },
         enabled: !!user && !!collection,
         onSuccess: (data: { isFollowing: boolean | ((prevState: boolean) => boolean); }) => {
             if (data) setIsFollowing(data.isFollowing);
