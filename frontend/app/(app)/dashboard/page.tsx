@@ -88,35 +88,11 @@ const BrandDashboard = ({ user }: { user: any }) => {
 };
 
 // --- CREATOR DASHBOARD ---
-const CreatorDashboard = ({ user }: { user: any }) => {
+const CreatorDashboard = ({ user, collections, isLoading, onDelete, onShare, copiedLink }: any) =>{
   const queryClient = useQueryClient();
-  const [copiedLink, setCopiedLink] = useState<string | null>(null);
+  const [ setCopiedLink] = useState<string | null>(null);
 
-  const { data: dashboardData, isLoading } = useQuery({
-    queryKey: ['dashboard', user?.id],
-    queryFn: () => getDashboardData(user.id),
-    enabled: !!user,
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: deleteCollection,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['dashboard', user?.id] });
-    },
-  });
-
-  const handleDelete = (collectionId: string) => {
-    if (window.confirm("Are you sure you want to delete this collection?")) {
-      deleteMutation.mutate(collectionId);
-    }
-  };
-
-  const handleShare = (collection: any) => {
-    const link = `http://localhost:3000/${collection.username}/${collection.slug}`;
-    navigator.clipboard.writeText(link);
-    setCopiedLink(collection.id);
-    setTimeout(() => setCopiedLink(null), 2000);
-  };
+  
 
   if (isLoading) {
     return (
@@ -126,7 +102,15 @@ const CreatorDashboard = ({ user }: { user: any }) => {
     );
   }
 
-  const collections = dashboardData?.collections || [];
+  function handleShare(col: any): void {
+    throw new Error('Function not implemented.');
+  }
+
+  function handleDelete(id: any): void {
+    throw new Error('Function not implemented.');
+  }
+
+ // const collections = dashboardData?.collections || [];
 
   return (
     <>
@@ -197,6 +181,8 @@ const CreatorDashboard = ({ user }: { user: any }) => {
 export default function UnifiedDashboardPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
+  const queryClient = useQueryClient();
+  const [copiedLink, setCopiedLink] = useState<string | null>(null);
 
   useEffect(() => {
     if (loading) return;
@@ -204,6 +190,8 @@ export default function UnifiedDashboardPage() {
       router.push('/login');
     }
   }, [user, loading, router]);
+
+  
 
   if (loading || !user) {
     return (
@@ -219,10 +207,44 @@ export default function UnifiedDashboardPage() {
     }
   }, [user.role, router]);
 
+  const { data: dashboardData, isLoading } = useQuery({
+    queryKey: ['dashboard', user?.id],
+    queryFn: () => getDashboardData(user.id),
+    enabled: !!user,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteCollection,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dashboard', user?.id] });
+    },
+  });
+
+  const handleDelete = (collectionId: string) => {
+    if (window.confirm("Are you sure you want to delete this collection?")) {
+      deleteMutation.mutate(collectionId);
+    }
+  };
+
+  const handleShare = (collection: any) => {
+    const link = `http://localhost:3000/${collection.username}/${collection.slug}`;
+    navigator.clipboard.writeText(link);
+    setCopiedLink(collection.id);
+    setTimeout(() => setCopiedLink(null), 2000);
+  };
   return (
     <div className="min-h-screen bg-slate-50">
       <main className="container mx-auto p-4 sm:p-8">
-        {user.role === 'CREATOR' && <CreatorDashboard user={user} />}
+      {user.role === 'CREATOR' && (
+    <CreatorDashboard 
+        user={user} 
+        collections={dashboardData?.collections || []}
+        isLoading={isLoading}
+        onDelete={handleDelete}
+        onShare={handleShare}
+        copiedLink={copiedLink}
+    />
+)}
         {user.role === 'BRAND' && <BrandDashboard user={user} />}
       </main>
     </div>
