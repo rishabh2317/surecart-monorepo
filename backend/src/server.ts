@@ -822,7 +822,16 @@ server.get('/redirect', async (request, reply) => {
 
 // --- Start Server ---
 const start = async () => {
- try { await server.listen({ port: 3001 }); } catch (err) { server.log.error(err); process.exit(1); }
-};
-start();
+    try {
+      // Railway provides a PORT environment variable. We must listen on this port.
+      // For local development, we fall back to 3001.
+      const port = process.env.PORT || 3001;
+      // We also need to listen on '0.0.0.0' to be accessible in a container
+      await server.listen({ port: Number(port), host: '0.0.0.0' });
+    } catch (err) {
+      server.log.error(err);
+      process.exit(1);
+    }
+  };
+  start();
 
