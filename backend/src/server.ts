@@ -5,7 +5,6 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-
 const server = Fastify({ logger: true });
 const prisma = new PrismaClient();
 const SALT_ROUNDS = 10;
@@ -14,22 +13,38 @@ let aiApiCallCount = 0;
 const AI_API_CALL_LIMIT = 10; // Our own internal monthly limit
 
 
-// This is the final, production-ready CORS configuration
 server.register(cors, { 
-    // IMPORTANT: In production, you must replace this with your exact frontend domain
-    // This prevents any other website from making requests to your API
-    origin: process.env.NODE_ENV === 'production' 
-        ? 'https://surecart-monorepo.vercel.app' 
-        : '*', // We can keep the wildcard for local development
-    
-    // This ensures all necessary HTTP methods are allowed by the server
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], 
+    origin: (origin, cb) => {
+        // Allow requests with no origin (like mobile apps, curl, etc.)
+        if (!origin) return cb(null, true);
+        
+        const allowedOrigins = [
+            'https://surecart-monorepo.vercel.app',
+            'https://surecart-monorepo.vercel.app',
+            'http://localhost:3000',
+            'http://localhost:3001'
+        ];
+        
+        if (process.env.NODE_ENV === 'development') {
+            return cb(null, true); // Allow all in development
+        }
+        
+        if (allowedOrigins.includes(origin)) {
+            return cb(null, true);
+        }
+        
+        // Return an error if the origin is not allowed
+        return cb(new Error('Not allowed by CORS'), false);
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    credentials: true
 });
-// --- NEW ANALYTICS ENDPOINT ---
-// Find and replace the existing /dashboard/:userId/analytics route
 
-
-// Find and replace the entire /dashboard/:userId/analytics route with this version
+// Add OPTIONS handler for preflight requests
+server.options('/*', async (request, reply) => {
+    reply.status(200).send();
+});
 // --- HEALTH CHECK ROUTE ---
 server.get('/health', async (request: any, reply: any) => {
     return { status: 'ok' };
@@ -827,17 +842,21 @@ server.get('/redirect', async (request, reply) => {
 });
 
 
-// --- World-Class Server Start Function ---
+// World-Class Server Start Function
 const start = async () => {
     try {
-      // This is the FIX: It uses the PORT from the environment (like Railway)
-      // and listens on '0.0.0.0' which is required for containerized environments.
-      const port = process.env.PORT || 3001;
-      await server.listen({ port: Number(port), host: '0.0.0.0' });
+        const port = process.env.PORT || 3001;
+        await server.listen({ port: Number(port), host: '0.0.0.0' });
+        console.log(`Server running on port ${port}`);
+        console.log(`CORS configured for: ${process.env.NODE_ENV === 'production' 
+            ? 'https://surecart-monorepo.vercel.app' 
+            : 'all origins (development)'}`);
     } catch (err) {
-      server.log.error(err);
-      process.exit(1);
+        server.log.error(err);
+        process.exit(1);
     }
-  };
+};
+
+start();
 
 
