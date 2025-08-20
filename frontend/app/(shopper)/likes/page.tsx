@@ -7,16 +7,17 @@ import Link from 'next/link';
 import { Heart } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { API_BASE_URL } from '@/lib/config';
 
 // API Functions
 const getLikedCollections = async (userId: string) => {
-    const res = await fetch(`http://localhost:3001/users/${userId}/likes`);
+    const res = await fetch(`${API_BASE_URL}/users/${userId}/likes`);
     if (!res.ok) throw new Error("Failed to fetch liked collections");
     return res.json();
 };
 
 const unlikeCollection = async ({ collectionId, userId }: { collectionId: string, userId: string }) => {
-    const res = await fetch(`http://localhost:3001/collections/${collectionId}/unlike`, {
+    const res = await fetch(`${API_BASE_URL}/collections/${collectionId}/unlike`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId }),

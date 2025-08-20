@@ -9,16 +9,17 @@ import { ExternalLink, Heart, Share2, Check, MessageCircle, Sparkles, UserPlus }
 import { useState, useEffect, useRef } from 'react';
 import AskAIDrawer from '@/components/shared/AskAIDrawer';
 import ShareModal from '@/components/shared/ShareModal';
+import { API_BASE_URL } from '@/lib/config';
 
 // --- API Functions (Preserved from your working code) ---
 async function getCollectionData(username: string, slug: string) {
-    const res = await fetch(`http://localhost:3001/public/collections/${username}/${slug}`);
+    const res = await fetch(`${API_BASE_URL}/public/collections/${username}/${slug}`);
     if (!res.ok) throw new Error("Collection not found");
     return res.json();
 }
 
 async function likeCollection({ collectionId, userId }: { collectionId: string, userId: string }) {
-    const res = await fetch(`http://localhost:3001/collections/${collectionId}/like`, {
+    const res = await fetch(`${API_BASE_URL}/collections/${collectionId}/like`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId }),
     });
     if (!res.ok) { const error = await res.json(); throw new Error(error.message); }
@@ -26,7 +27,7 @@ async function likeCollection({ collectionId, userId }: { collectionId: string, 
 }
 
 async function unlikeCollection({ collectionId, userId }: { collectionId: string, userId: string }) {
-    const res = await fetch(`http://localhost:3001/collections/${collectionId}/unlike`, {
+    const res = await fetch(`${API_BASE_URL}/collections/${collectionId}/unlike`, {
         method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId }),
     });
     if (!res.ok) throw new Error("Failed to unlike");
@@ -35,13 +36,13 @@ async function unlikeCollection({ collectionId, userId }: { collectionId: string
 
 async function getLikeStatus(collectionId: string, userId: string) {
     if (!collectionId || !userId) return { isLiked: false };
-    const res = await fetch(`http://localhost:3001/users/${userId}/liked-status/${collectionId}`);
+    const res = await fetch(`${API_BASE_URL}/users/${userId}/liked-status/${collectionId}`);
     if (!res.ok) return { isLiked: false };
     return res.json();
 }
 
 async function followCreator({ creatorId, userId }: { creatorId: string, userId: string }) {
-    const res = await fetch(`http://localhost:3001/users/${creatorId}/follow`, {
+    const res = await fetch(`${API_BASE_URL}/users/${creatorId}/follow`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId }),
     });
     if (!res.ok) throw new Error("Failed to follow");
@@ -49,7 +50,7 @@ async function followCreator({ creatorId, userId }: { creatorId: string, userId:
 }
 
 const unfollowCreator = async ({ creatorId, userId }: { creatorId: string, userId: string }) => {
-    const res = await fetch(`http://localhost:3001/users/${creatorId}/unfollow`, {
+    const res = await fetch(`${API_BASE_URL}/users/${creatorId}/unfollow`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId }),
@@ -61,14 +62,14 @@ const unfollowCreator = async ({ creatorId, userId }: { creatorId: string, userI
 const getFollowStatus = async (creatorId: string, userId: string) => {
     // This check prevents the API call if IDs are not ready
     if (!creatorId || !userId) return { isFollowing: false };
-    const res = await fetch(`http://localhost:3001/users/${userId}/follow-status/${creatorId}`);
+    const res = await fetch(`${API_BASE_URL}/users/${userId}/follow-status/${creatorId}`);
     if (!res.ok) return { isFollowing: false };
     return res.json();
 };
 
 
 async function postComment({ collectionId, userId, text }: { collectionId: string, userId: string, text: string }) {
-    const res = await fetch(`http://localhost:3001/collections/${collectionId}/comments`, {
+    const res = await fetch(`${API_BASE_URL}/collections/${collectionId}/comments`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, text }),
     });
     if (!res.ok) throw new Error("Failed to post comment");
@@ -77,7 +78,7 @@ async function postComment({ collectionId, userId, text }: { collectionId: strin
 
 async function getComments(collectionId: string) {
     if (!collectionId) return [];
-    const res = await fetch(`http://localhost:3001/collections/${collectionId}/comments`);
+    const res = await fetch(`${API_BASE_URL}/collections/${collectionId}/comments`);
     if (!res.ok) return [];
     return res.json();
 }
@@ -163,7 +164,7 @@ export default function PublicCollectionPage() {
     useEffect(() => {
         // This ensures we only log a view once the collection data has successfully loaded
         if (collection && collection.id) {
-            fetch(`http://localhost:3001/public/collections/${collection.id}/view`, {
+            fetch(`${API_BASE_URL}/public/collections/${collection.id}/view`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 // If a user is logged in, we can associate the view with them

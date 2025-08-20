@@ -6,9 +6,10 @@ import { Edit } from 'lucide-react';
 import { useParams, notFound } from 'next/navigation';
 import Link from 'next/link';
 import CreatorPageHeader from '@/components/creator/CreatorPageHeader';
+import { API_BASE_URL } from '@/lib/config';
 
 const getCollection = async (collectionId: string) => {
-    const res = await fetch(`http://localhost:3001/collections/${collectionId}`);
+    const res = await fetch(`${API_BASE_URL}/collections/${collectionId}`);
     if (!res.ok) throw new Error('Collection not found');
     return res.json();
 };

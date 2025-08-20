@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { saveUserSession } from '@/lib/auth';
 import { User, Instagram, Phone, UploadCloud } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/config';
+
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -25,7 +27,7 @@ export default function OnboardingPage() {
     };
 
     try {
-        const res = await fetch(`http://localhost:3001/users/${user.id}/upgrade-to-creator`, {
+        const res = await fetch(`${API_BASE_URL}/users/${user.id}/upgrade-to-creator`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(profileData),

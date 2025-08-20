@@ -7,10 +7,11 @@ import { useEffect, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { ArrowUpRight, MousePointerClick, Heart, Save, UserPlus, Eye } from 'lucide-react';
 import CreatorPageHeader from '@/components/creator/CreatorPageHeader';
+import { API_BASE_URL } from '@/lib/config';
 
 // --- API Function ---
 const getAnalyticsData = async (userId: string) => {
-    const res = await fetch(`http://localhost:3001/dashboard/${userId}/analytics`);
+    const res = await fetch(`${API_BASE_URL}/dashboard/${userId}/analytics`);
     if (!res.ok) throw new Error("Failed to fetch analytics");
     return res.json();
 };

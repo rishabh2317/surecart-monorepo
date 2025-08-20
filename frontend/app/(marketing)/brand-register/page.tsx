@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Building, Tag, Globe, Wifi, Store, Mail, User } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/config';
 
 export default function BrandRegisterPage() {
     const router = useRouter();
@@ -26,7 +27,7 @@ export default function BrandRegisterPage() {
         };
 
         try {
-            const res = await fetch('http://localhost:3001/brands/register', {
+            const res = await fetch(`${API_BASE_URL}/brands/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),

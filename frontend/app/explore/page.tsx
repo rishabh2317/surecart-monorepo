@@ -4,15 +4,16 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { useQuery } from '@tanstack/react-query';
 import { Heart, Zap, Clock } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/config';
 
 // API Functions
 async function getExploreData() {
-    const res = await fetch(`http://localhost:3001/public/explore`);
+    const res = await fetch(`${API_BASE_URL}/public/explore`);
     if (!res.ok) return { new: [], trending: [] };
     return res.json();
 }
 async function getLikedCollections(userId: string) {
-    const res = await fetch(`http://localhost:3001/users/${userId}/likes`);
+    const res = await fetch(`${API_BASE_URL}/users/${userId}/likes`);
     if (!res.ok) return [];
     return res.json();
 }

@@ -6,8 +6,7 @@ import { useRouter } from 'next/navigation';
 import { saveUserSession, getUserSession, clearUserSession } from '@/lib/auth';
 import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { firebaseApp } from './firebase'; // Make sure you have this file with your firebase config
-
-const API_BASE_URL = 'http://localhost:3001';
+import { API_BASE_URL } from './config'; // Adjust the import path as necessary
 
 interface User {
   id: string;

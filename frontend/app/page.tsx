@@ -2,9 +2,10 @@
 'use client';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
+import { API_BASE_URL } from '@/lib/config';
 
 async function getHomepageFeed() {
-    const res = await fetch(`http://localhost:3001/public/home`);
+    const res = await fetch(`${API_BASE_URL}/public/home`);
     if (!res.ok) return [];
     return res.json();
 }

@@ -4,10 +4,11 @@
 import { useMutation } from '@tanstack/react-query';
 import { X, Sparkles } from 'lucide-react';
 import { useEffect } from 'react';
+import { API_BASE_URL } from '@/lib/config';
 
 // API Function
 const getAiSummary = async (productName: string) => {
-    const res = await fetch('http://localhost:3001/products/ask-ai', {
+    const res = await fetch(`${API_BASE_URL}/products/ask-ai`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productName }),

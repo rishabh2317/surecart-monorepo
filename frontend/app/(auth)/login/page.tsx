@@ -5,6 +5,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import Link from 'next/link';
+import { API_BASE_URL } from '@/lib/config';
 
 // --- A simple SVG for the Google Icon ---
 const GoogleIcon = () => (

@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getDashboardData, deleteCollection } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
+import { API_BASE_URL } from '@/lib/config';
 import {
   Plus, BarChart2, Share2, Edit, Trash2, Check, ExternalLink,
   MousePointerClick, Users, Star
@@ -14,7 +15,7 @@ import {
 
 // --- Helpers ---
 const getBrandDashboardData = async (brandId: string) => {
-  const res = await fetch(`http://localhost:3001/brands/${brandId}/dashboard`);
+  const res = await fetch(`${API_BASE_URL}/brands/${brandId}/dashboard`);
   if (!res.ok) throw new Error("Failed to fetch brand data");
   return res.json();
 };

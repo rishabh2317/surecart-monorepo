@@ -9,6 +9,7 @@ import { getUserSession } from '@/lib/auth';
 import CreatorPageHeader from '@/components/creator/CreatorPageHeader';
 import {Check, Copy, X, UploadCloud, Edit, Search } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
+import { API_BASE_URL } from '@/lib/config';
 
 // --- Types (from your original code) ---
 interface Product { id: string; name: string; brand: string; imageUrl: string; }
@@ -17,7 +18,7 @@ interface Brand { id: string; name: string; }
 
 // --- API Functions (from your original code) ---
 const getBrands = async (): Promise<Brand[]> => {
-    const res = await fetch(`http://localhost:3001/brands`);
+    const res = await fetch(`${API_BASE_URL}/brands`);
     if (!res.ok) throw new Error("Failed to fetch brands");
     return res.json();
 };

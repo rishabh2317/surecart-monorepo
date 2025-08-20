@@ -8,10 +8,11 @@ import { useEffect, useState } from 'react';
 import CreatorPageHeader from '@/components/creator/CreatorPageHeader';
 import { Copy, Check, Gift } from 'lucide-react';
 import TransactionsDrawer from '@/components/creator/TransactionsDrawer';
+import { API_BASE_URL } from '@/lib/config';
 
 // API Function
 const getRewardsData = async (userId: string) => {
-    const res = await fetch(`http://localhost:3001/users/${userId}/rewards`);
+    const res = await fetch(`${API_BASE_URL}/users/${userId}/rewards`);
     if (!res.ok) throw new Error("Failed to fetch rewards");
     return res.json();
 };
