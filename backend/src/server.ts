@@ -14,10 +14,17 @@ let aiApiCallCount = 0;
 const AI_API_CALL_LIMIT = 10; // Our own internal monthly limit
 
 
-server.register(cors, {
-   origin: '*', // In production, you would change this to your frontend's domain
-   methods: ['GET', 'POST', 'PUT', 'DELETE'], // Explicitly allow the DELETE method
- });
+// This is the final, production-ready CORS configuration
+server.register(cors, { 
+    // IMPORTANT: In production, you must replace this with your exact frontend domain
+    // This prevents any other website from making requests to your API
+    origin: process.env.NODE_ENV === 'production' 
+        ? 'https://surecart-monorepo.vercel.app' 
+        : '*', // We can keep the wildcard for local development
+    
+    // This ensures all necessary HTTP methods are allowed by the server
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], 
+});
 // --- NEW ANALYTICS ENDPOINT ---
 // Find and replace the existing /dashboard/:userId/analytics route
 
@@ -820,18 +827,17 @@ server.get('/redirect', async (request, reply) => {
 });
 
 
-// --- Start Server ---
+// --- World-Class Server Start Function ---
 const start = async () => {
     try {
-      // Railway provides a PORT environment variable. We must listen on this port.
-      // For local development, we fall back to 3001.
+      // This is the FIX: It uses the PORT from the environment (like Railway)
+      // and listens on '0.0.0.0' which is required for containerized environments.
       const port = process.env.PORT || 3001;
-      // We also need to listen on '0.0.0.0' to be accessible in a container
       await server.listen({ port: Number(port), host: '0.0.0.0' });
     } catch (err) {
       server.log.error(err);
       process.exit(1);
     }
   };
-  start();
+
 
