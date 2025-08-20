@@ -15,17 +15,22 @@ const getAnalyticsData = async (userId: string) => {
     return res.json();
 };
 
-// --- Type Definitions ---
+// This is the new, correct type definition for our chart data
 interface AnalyticsData {
     summary: {
         totalAudience: number;
         engagements: number;
-        totalClicks: number;
+        outboundClicks: number;
         saves: number;
         totalLikes: number;
         followers: number;
     };
-    performanceOverTime: Array<{ date: string; [key: string]: number }>;
+    performanceOverTime: Array<{
+        date: string;
+        Clicks: number;
+        Likes: number;
+        Engagements: number;
+    }>;
     topCollections: Array<{ id: string; name: string; clicks: number; likes: number; shares: number }>;
 }
 
@@ -49,7 +54,7 @@ export default function AnalyticsPage() {
 
     const { data: analytics, isLoading } = useQuery<AnalyticsData>({
         queryKey: ['analytics', user?.id],
-        queryFn: () => getAnalyticsData(user.id),
+        queryFn: () => user ? getAnalyticsData(user.id) : Promise.resolve(null),
         enabled: !!user,
     });
 
