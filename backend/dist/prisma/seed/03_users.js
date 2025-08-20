@@ -1,3 +1,5 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 const { PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcryptjs");
 const prisma = new PrismaClient();
@@ -32,5 +34,4 @@ async function main() {
 main()
     .catch(console.error)
     .finally(() => prisma.$disconnect());
-export {};
 //# sourceMappingURL=03_users.js.map

@@ -1,3 +1,5 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 const { execSync } = require("child_process");
 async function runSeed(file) {
     console.log(`\n🚀 Running ${file}...`);
@@ -12,5 +14,4 @@ async function main() {
     console.log("\n✅ All seeding scripts completed!");
 }
 main();
-export {};
 //# sourceMappingURL=seed.js.map

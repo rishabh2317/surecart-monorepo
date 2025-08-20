@@ -1,17 +1,21 @@
-import Fastify from "fastify";
-import cors from "@fastify/cors";
-import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcrypt";
-import { GoogleGenerativeAI } from "@google/generative-ai";
-const server = Fastify({ logger: true });
-const prisma = new PrismaClient();
-const PORT = Number(process.env.PORT ?? 3000);
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? "";
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+// src/server.ts
+const fastify_1 = __importDefault(require("fastify"));
+const cors_1 = __importDefault(require("@fastify/cors"));
+const client_1 = require("@prisma/client");
+const bcrypt_1 = __importDefault(require("bcrypt"));
+const generative_ai_1 = require("@google/generative-ai");
+const server = (0, fastify_1.default)({ logger: true });
+const prisma = new client_1.PrismaClient();
 const SALT_ROUNDS = 10;
 // Add this at the top of your server.ts file, with other variables
 let aiApiCallCount = 0;
-const AI_API_CALL_LIMIT = 50; // Our own internal monthly limit
-server.register(cors, {
+const AI_API_CALL_LIMIT = 10; // Our own internal monthly limit
+server.register(cors_1.default, {
     origin: '*', // In production, you would change this to your frontend's domain
     methods: ['GET', 'POST', 'PUT', 'DELETE'], // Explicitly allow the DELETE method
 });
@@ -56,12 +60,12 @@ server.get('/dashboard/:userId/analytics', async (request, reply) => {
             const key = d.toISOString().split('T')[0];
             dateMap.set(key, { Clicks: 0, Likes: 0, Engagements: 0 });
         }
-        clicksByDayRaw.forEach((row) => {
+        clicksByDayRaw.forEach(row => {
             const key = new Date(row.createdAt).toISOString().split('T')[0];
             if (dateMap.has(key))
                 dateMap.get(key).Clicks += row._count._all;
         });
-        likesByDayRaw.forEach((row) => {
+        likesByDayRaw.forEach(row => {
             const key = new Date(row.createdAt).toISOString().split('T')[0];
             if (dateMap.has(key))
                 dateMap.get(key).Likes += row._count._all;
@@ -74,7 +78,7 @@ server.get('/dashboard/:userId/analytics', async (request, reply) => {
         // --- 4. Calculate Summary and Top Collections ---
         const totalClicks = collections.reduce((sum, col) => sum + col._count.clicks, 0);
         const totalLikes = collections.reduce((sum, col) => sum + col._count.likedBy, 0);
-        const topCollections = collections.map((c) => ({
+        const topCollections = collections.map(c => ({
             id: c.id, name: c.name, clicks: c._count.clicks, likes: c._count.likedBy,
             shares: Math.floor(c._count.clicks / 10 + c._count.likedBy * 2),
         })).sort((a, b) => b.clicks - a.clicks).slice(0, 5);
@@ -108,7 +112,7 @@ server.post('/register', async (request, reply) => {
     if (!email || !password || !username)
         return reply.code(400).send({ message: 'All fields are required.' });
     try {
-        const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+        const hashedPassword = await bcrypt_1.default.hash(password, SALT_ROUNDS);
         const newUser = await prisma.user.create({ data: { email, username, authProviderId: hashedPassword, role } });
         const { authProviderId, ...userResponse } = newUser;
         reply.code(201).send(userResponse);
@@ -130,7 +134,7 @@ server.post('/login', async (request, reply) => {
         const user = await prisma.user.findUnique({ where: { email } });
         if (!user)
             return reply.code(401).send({ message: 'Invalid credentials.' });
-        const match = await bcrypt.compare(password, user.authProviderId);
+        const match = await bcrypt_1.default.compare(password, user.authProviderId);
         if (!match)
             return reply.code(401).send({ message: 'Invalid credentials.' });
         const { authProviderId, ...userResponse } = user;
@@ -196,7 +200,7 @@ server.post('/brands/register', async (request, reply) => {
         // In a real app, we would create a temporary "BrandApplication" model.
         // For the MVP, we can create a placeholder user and brand.
         const placeholderEmail = `brand-${Date.now()}@surecart-pending.dev`;
-        const hashedPassword = await bcrypt.hash(`temp_password_${Date.now()}`, 10);
+        const hashedPassword = await bcrypt_1.default.hash(`temp_password_${Date.now()}`, 10);
         const brandUser = await prisma.user.create({
             data: {
                 email: placeholderEmail,
@@ -359,7 +363,7 @@ server.get('/users/:userId/likes', async (request, reply) => {
                 }
             }
         });
-        const response = likedCollections.map((like) => ({
+        const response = likedCollections.map(like => ({
             id: like.collection.id,
             name: like.collection.name,
             slug: like.collection.slug,
@@ -400,9 +404,9 @@ server.post('/products/ask-ai', async (request, reply) => {
     if (!process.env.GEMINI_API_KEY) {
         return reply.code(500).send({ message: "AI service is not configured." });
     }
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const genAI = new generative_ai_1.GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const prompt = `You are a helpful e-commerce assistant. Your goal is to provide a balanced and concise summary of public reviews for a product. Based on common knowledge and reviews for the product "${productName}", provide a summary with: 
+    const prompt = `You are a helpful e-commerce assistant. Your goal is to provide a balanced and concise summary of public reviews for a product. Based on common knowledge and reviews for the product "${productName}", provide a summary with:
 - Three bullet points for "Pros" (what people love).
 - Three bullet points for "Cons" (common complaints or drawbacks).
 - A one-sentence "Best For" recommendation.
@@ -431,7 +435,7 @@ server.get('/dashboard/:userId', async (request, reply) => {
             where: { userId },
             include: { _count: { select: { products: true, likedBy: true } } }
         });
-        const responseData = collections.map((c) => ({
+        const responseData = collections.map(c => ({
             id: c.id, name: c.name, slug: c.slug,
             productsCount: c._count.products,
             likes: c._count.likedBy,
@@ -455,12 +459,7 @@ server.get('/collections/:id', async (request, reply) => {
             return reply.code(404).send({ message: "Collection not found" });
         const response = {
             id: collection.id, name: collection.name,
-            products: collection.products.map((cp) => ({
-                id: cp.product.id,
-                name: cp.product.name,
-                imageUrl: cp.product.imageUrls[0],
-                brand: cp.product.brand?.name || "Brand"
-            }))
+            products: collection.products.map(cp => ({ id: cp.product.id, name: cp.product.name, imageUrl: cp.product.imageUrls[0], brand: cp.product.brand?.name || "Brand" }))
         };
         reply.send(response);
     }
@@ -559,7 +558,7 @@ server.get('/brands/:brandId/dashboard', async (request, reply) => {
             }
         });
         const totalClicks = collectionsWithBrandProducts.reduce((sum, col) => sum + col._count.clicks, 0);
-        const topCreators = collectionsWithBrandProducts.map((col) => ({
+        const topCreators = collectionsWithBrandProducts.map(col => ({
             id: col.user.id,
             username: col.user.username,
             profileImageUrl: col.user.profileImageUrl,
@@ -592,7 +591,7 @@ server.get('/users/:userId/rewards', async (request, reply) => {
         });
         // Calculate the wallet balance from approved transactions
         const balance = transactions
-            .filter((t) => t.status === 'APPROVED')
+            .filter(t => t.status === 'APPROVED')
             .reduce((sum, t) => sum + t.amount, 0);
         const wallet = {
             balance: balance,
@@ -620,7 +619,7 @@ server.get('/products/search', async (request, reply) => {
             },
             include: { brand: true },
         });
-        const response = products.map((p) => ({
+        const response = products.map(p => ({
             id: p.id,
             name: p.name,
             // This is the FIX: Safely access the brand name
@@ -676,7 +675,7 @@ server.get('/public/home', async (request, reply) => {
                 products: { take: 1, orderBy: { displayOrder: 'asc' }, include: { product: { select: { imageUrls: true } } } }
             }
         });
-        const response = collections.map((c) => ({
+        const response = collections.map(c => ({
             id: c.id, name: c.name, slug: c.slug, author: c.user.username,
             authorAvatar: c.user.profileImageUrl || `https://placehold.co/100x100/E2E8F0/475569?text=${c.user.username.charAt(0).toUpperCase()}`,
             coverImage: c.coverImageUrl || c.products[0]?.product.imageUrls[0] || `https://placehold.co/400x300/cccccc/333333?text=${encodeURIComponent(c.name)}`
@@ -700,11 +699,11 @@ server.get('/public/explore', async (request, reply) => {
         const newCollections = await prisma.collection.findMany({
             where: { createdAt: { gte: sevenDaysAgo } }, take: 5, orderBy: { createdAt: 'desc' },
             include: { user: true, products: { take: 1, orderBy: { displayOrder: 'asc' }, include: { product: true } } }
-        }).then((res) => res.map(mapCollection));
+        }).then(res => res.map(mapCollection));
         const trendingCollections = await prisma.collection.findMany({
             take: 5, orderBy: { likedBy: { _count: 'desc' } },
             include: { user: true, products: { take: 1, orderBy: { displayOrder: 'asc' }, include: { product: true } } }
-        }).then((res) => res.map(mapCollection));
+        }).then(res => res.map(mapCollection));
         reply.send({ new: newCollections, trending: trendingCollections });
     }
     catch (error) {
@@ -727,13 +726,7 @@ server.get('/public/collections/:username/:slug', async (request, reply) => {
         const publicCollection = {
             id: collection.id, name: collection.name, description: collection.description,
             author: collection.user.username, authorId: collection.user.id, authorAvatar: collection.user.profileImageUrl || `https://placehold.co/100x100/E2E8F0/475569?text=${collection.user.username.charAt(0).toUpperCase()}`,
-            products: collection.products.map((cp) => ({
-                id: cp.product.id,
-                name: cp.product.name,
-                imageUrl: cp.product.imageUrls[0],
-                brand: cp.product.brand?.name || "Brand",
-                buyUrl: `http://localhost:3001/redirect?collectionId=${collection.id}&productId=${cp.product.id}&affiliateUrl=${encodeURIComponent(cp.product.baseUrl)}`
-            }))
+            products: collection.products.map(cp => ({ id: cp.product.id, name: cp.product.name, imageUrl: cp.product.imageUrls[0], brand: cp.product.brand?.name || "Brand", buyUrl: `http://localhost:3001/redirect?collectionId=${collection.id}&productId=${cp.product.id}&affiliateUrl=${encodeURIComponent(cp.product.baseUrl)}` }))
         };
         reply.send(publicCollection);
     }
@@ -772,8 +765,7 @@ server.get('/redirect', async (request, reply) => {
 // --- Start Server ---
 const start = async () => {
     try {
-        await server.listen({ port: PORT, host: '0.0.0.0' });
-        server.log.info(`🚀 Server running on port ${PORT}`);
+        await server.listen({ port: 3001 });
     }
     catch (err) {
         server.log.error(err);

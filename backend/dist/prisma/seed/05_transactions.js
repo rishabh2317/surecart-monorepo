@@ -1,3 +1,5 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 function randPrice(min, max) {
@@ -39,5 +41,4 @@ async function main() {
 main()
     .catch(console.error)
     .finally(() => prisma.$disconnect());
-export {};
 //# sourceMappingURL=05_transactions.js.map
