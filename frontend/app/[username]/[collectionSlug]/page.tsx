@@ -179,16 +179,15 @@ export default function PublicCollectionPage() {
         enabled: !!user && !!collection,
     });
     
-    useQuery({
+    useQuery<{ isFollowing: boolean } | undefined, Error>({
         queryKey: ['followStatus', collection?.authorId, user?.id],
         queryFn: () => getFollowStatus(collection.authorId, user.id),
         enabled: !!user && !!collection,
-        onSuccess: (data) => {
+        onSuccess: (data: { isFollowing: boolean | ((prevState: boolean) => boolean); }) => {
             if (data) setIsFollowing(data.isFollowing);
         },
     });
     
-
     const commentsQueryKey = ['comments', collection?.id];
     const { data: comments = [] } = useQuery({
         queryKey: commentsQueryKey,

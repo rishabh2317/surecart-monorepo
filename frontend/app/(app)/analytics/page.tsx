@@ -76,7 +76,7 @@ export default function AnalyticsPage() {
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
                     <StatCard title="Collection Views" value={summary?.totalAudience || 0} icon={Eye} />
                     <StatCard title="Engagements" value={summary?.engagements || 0} icon={ArrowUpRight} />
-                    <StatCard title="Outbound Clicks" value={summary?.totalClicks || 0} icon={MousePointerClick} />
+                    <StatCard title="Outbound Clicks" value={summary?.outboundClicks || 0} icon={MousePointerClick} />
                     <StatCard title="Saves" value={summary?.saves || 0} icon={Save} />
                     <StatCard title="Likes" value={summary?.totalLikes || 0} icon={Heart} />
                     <StatCard title="Followers" value={summary?.followers || 0} icon={UserPlus} />

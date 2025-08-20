@@ -32,6 +32,7 @@ const StatCard = ({ title, value, icon: Icon }: any) => (
 // --- BRAND DASHBOARD ---
 const BrandDashboard = ({ user }: { user: any }) => {
   const MOCK_BRAND_ID = user.brand?.id || "YOUR_BRAND_ID";
+  const router = useRouter(); // Added this line to define router
 
   useEffect(() => {
     if (user && user.role !== 'BRAND') router.push('/');
@@ -212,12 +213,17 @@ export default function UnifiedDashboardPage() {
     );
   }
 
+  useEffect(() => {
+    if (user.role === 'SHOPPER') {
+      router.push('/likes');
+    }
+  }, [user.role, router]);
+
   return (
     <div className="min-h-screen bg-slate-50">
       <main className="container mx-auto p-4 sm:p-8">
         {user.role === 'CREATOR' && <CreatorDashboard user={user} />}
         {user.role === 'BRAND' && <BrandDashboard user={user} />}
-        {user.role === 'SHOPPER' && router.push('/likes')}
       </main>
     </div>
   );

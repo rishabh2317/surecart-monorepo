@@ -67,7 +67,7 @@ export default function RewardsPage() {
 
     const { data: rewards, isLoading } = useQuery({
         queryKey: ['rewards', user?.id],
-        queryFn: () => getRewardsData(user.id),
+        queryFn: () => user ? getRewardsData(user.id) : null,
         enabled: !!user,
     });
 
