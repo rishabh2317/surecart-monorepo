@@ -5,9 +5,30 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
+// --- Global Error Handling ---
+// It's crucial to have these at the top of your entry file to catch any startup errors.
+// Using console.error is more reliable for logging during a crash.
+process.on('uncaughtException', (err: Error, origin: string) => {
+  console.error('!!!!!!!!!! UNCAUGHT EXCEPTION !!!!!!!!!!');
+  console.error(`[${new Date().toISOString()}] Caught exception:`, err);
+  console.error(`[${new Date().toISOString()}] Exception origin:`, origin);
+  // The most important part is the stack trace.
+  console.error(err.stack);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
+  console.error('!!!!!!!!!! UNHANDLED REJECTION !!!!!!!!!!');
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  if (reason instanceof Error) {
+    console.error('Stack:', reason.stack);
+  }
+  process.exit(1);
+});
 
 // Initialize server with better logging
 const server = Fastify({
+  trustProxy: true, // Important for getting correct IP addresses behind a proxy like Railway
   logger: {
     level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
     transport: process.env.NODE_ENV === 'development' ? {
@@ -38,7 +59,6 @@ server.register(cors, {
     if (!origin) return cb(null, true);
   
     const allowedOrigins = [
-      'https://surecart-monorepo.vercel.app',
       'https://surecart-monorepo.vercel.app',
       'http://localhost:3000',
       'http://localhost:3001'
@@ -672,15 +692,12 @@ server.get('/collections/:collectionId/comments', async (request, reply) => {
 // POST /products/ask-ai
 server.post('/products/ask-ai', async (request, reply) => {
  const { productName } = request.body as { productName: string };
- if (!process.env.GEMINI_API_KEY) {
-   server.log.error('GEMINI_API_KEY is not configured.');
-   return reply.code(500).send({ message: "AI service is not configured." });
-}
  if (aiApiCallCount >= AI_API_CALL_LIMIT) {
      return reply.code(429).send({ message: "This feature is temporarily unavailable due to high demand. Please try again later." });
  }
  // This is a critical check for production
  if (!process.env.GEMINI_API_KEY) {
+     server.log.error('GEMINI_API_KEY is not configured.');
      return reply.code(500).send({ message: "AI service is not configured." });
  }
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -1213,7 +1230,7 @@ server.get('/redirect', async (request, reply) => {
              collectionId,
              productId,
              userAgent: request.headers['user-agent'] || '',
-             ipAddress: (request.headers['x-forwarded-for'] as string) || request.ip,
+             ipAddress: request.ip, // Fastify will get the correct IP with trustProxy: true
          }
      });
  } catch (err) {
@@ -1254,8 +1271,8 @@ const start = async () => {
       await prisma.$connect();
       server.log.info('Database connected successfully');
     } catch (dbError) {
-      server.log.error('Database connection failed:', dbError);
-      throw new Error('Database connection failed');
+      server.log.error({ err: dbError }, 'Database connection failed during startup.');
+      throw dbError; // Throw the original, more informative error
     }
      await server.listen({ port: Number(port), host });
   
@@ -1265,7 +1282,7 @@ const start = async () => {
       ? 'https://surecart-monorepo.vercel.app'
       : 'all origins (development)'}`);
    } catch (err) {
-    server.log.error('❌ Server startup failed:', err);
+    server.log.error({ err }, '❌ Server startup failed');
     // Graceful shutdown
     await prisma.$disconnect();
     process.exit(1);
@@ -1287,32 +1304,7 @@ const gracefulShutdown = async (signal: string) => {
  // Handle different shutdown signals
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('unhandledRejection', (reason, promise) => {
-  server.log.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  process.exit(1);
-});
-process.on('uncaughtException', (error) => {
-  server.log.error('Uncaught Exception:', error);
-  process.exit(1);
-});
  // --- START THE SERVER ---
 start();
  // Export for testing purposes
 export { server };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
