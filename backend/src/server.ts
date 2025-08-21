@@ -117,27 +117,7 @@ server.register(cors, {
 server.options('/*', async (request: FastifyRequest, reply: FastifyReply) => {
     reply.status(200).send();
 });
-// --- HEALTH CHECK ROUTE ---
-server.get('/health', async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      server.log.info('Health check: testing database connection...');
-      // Test database connection
-      await prisma.$queryRaw`SELECT 1`;
-      server.log.info('Health check: database connection successful.');
-      return { 
-        status: 'ok', 
-        database: 'connected',
-        timestamp: new Date().toISOString()
-      };
-    } catch (error) {
-      server.log.error({ err: error }, 'Database health check failed.');
-      reply.status(500).send({ 
-        status: 'error', 
-        database: 'disconnected',
-        timestamp: new Date().toISOString()
-      });
-    }
-  });
+
 
 server.get('/dashboard/:userId/analytics', async (request: FastifyRequest, reply: FastifyReply) => {
    const { userId } = request.params as { userId: string };
