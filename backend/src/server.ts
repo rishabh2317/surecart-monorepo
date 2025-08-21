@@ -1,3 +1,17 @@
+// top of server.ts (above everything else)
+process.on('uncaughtException', (err: any) => {
+    // print full stack if available
+    console.error('❌ Uncaught Exception:', err && err.stack ? err.stack : err);
+    // give the logger a moment to flush, then exit
+    try { setTimeout(() => process.exit(1), 100); } catch (e) { process.exit(1); }
+  });
+  
+  process.on('unhandledRejection', (reason: any, promise) => {
+    console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason && reason.stack ? reason.stack : reason);
+    try { setTimeout(() => process.exit(1), 100); } catch (e) { process.exit(1); }
+  });
+  
+
 // src/server.ts
 import Fastify, { FastifyRequest, FastifyReply } from 'fastify';
 import cors from '@fastify/cors';
