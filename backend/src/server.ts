@@ -105,8 +105,8 @@ server.register(cors, {
       if (allowedOrigins.includes(origin)) {
         return cb(null, true);
       }
-      
-      return cb(new Error('Not allowed by CORS'), false);
+      cb(null, false);
+      //return cb(new Error('Not allowed by CORS'), false);
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
