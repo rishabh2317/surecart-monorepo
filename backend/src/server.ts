@@ -542,6 +542,10 @@ server.get('/collections/:collectionId/comments', async (request, reply) => {
 // POST /products/ask-ai
 server.post('/products/ask-ai', async (request, reply) => {
   const { productName } = request.body as { productName: string };
+  if (!process.env.GEMINI_API_KEY) {
+    server.log.error('GEMINI_API_KEY is not configured.');
+    return reply.code(500).send({ message: "AI service is not configured." });
+}
   if (aiApiCallCount >= AI_API_CALL_LIMIT) {
       return reply.code(429).send({ message: "This feature is temporarily unavailable due to high demand. Please try again later." });
   }
