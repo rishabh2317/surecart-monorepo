@@ -93,6 +93,7 @@ server.register(cors, {
       
       const allowedOrigins = [
         'https://surecart-monorepo.vercel.app',
+        'http://surecart-monorepo.vercel.app',
         'http://localhost:3000',
         'http://localhost:3001'
       ];
