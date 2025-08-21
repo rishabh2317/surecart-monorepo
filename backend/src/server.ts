@@ -5,6 +5,22 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
+// --- Global Error Handling ---
+// It's crucial to have these handlers at the top to catch any errors during initialization.
+// They will safely shut down the process, which is the recommended practice.
+process.on('uncaughtException', (error) => {
+  // Using console.error here is intentional, as the server logger might not be initialized.
+  console.error('🚨 UNCAUGHT EXCEPTION! Shutting down...');
+  console.error(error);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('🚨 UNHANDLED REJECTION! Shutting down...');
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
+});
+
 
 // Initialize server with better logging
 const server = Fastify({ 
@@ -20,6 +36,15 @@ const server = Fastify({
     }
   });
   
+  // Add Fastify error handler
+  server.setErrorHandler((error, request, reply) => {
+    // Use the structured Fastify logger
+    server.log.error({ err: error }, '🚨 Fastify Error');
+    reply.status(500).send({ 
+      error: 'Internal server error',
+      ...(process.env.NODE_ENV === 'development' && { details: error.message })
+    });
+  });
 const prisma = new PrismaClient();
 const SALT_ROUNDS = 10;
 // Add this at the top of your server.ts file, with other variables
@@ -33,7 +58,6 @@ server.register(cors, {
       if (!origin) return cb(null, true);
       
       const allowedOrigins = [
-        'https://surecart-monorepo.vercel.app',
         'https://surecart-monorepo.vercel.app',
         'http://localhost:3000',
         'http://localhost:3001'
@@ -874,8 +898,10 @@ server.get('/redirect', async (request: FastifyRequest, reply: FastifyReply) => 
 const start = async () => {
     try {
       const port = process.env.PORT || 3001;
-      const host = '0.0.0.0'; // Critical for Railway
+      const host = '0.0.0.0'; // This is critical for deployment platforms like Railway
   
+      server.log.info('🔧 Starting server with configuration:');
+      server.log.info(`   Port: ${port}, Host: ${host}, NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
       server.log.info(`Starting server in ${process.env.NODE_ENV} mode`);
       server.log.info(`Server will listen on ${host}:${port}`);
   
@@ -922,19 +948,9 @@ const start = async () => {
   // Handle different shutdown signals
   process.on('SIGINT', () => gracefulShutdown('SIGINT'));
   process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-  process.on('unhandledRejection', (reason, promise) => {
-    server.log.error('Unhandled Rejection at:', promise, 'reason:', reason);
-    process.exit(1);
-  });
-  process.on('uncaughtException', (error) => {
-    server.log.error('Uncaught Exception:', error);
-    process.exit(1);
-  });
   
   // --- START THE SERVER ---
   start();
   
   // Export for testing purposes
   export { server };
-
-
