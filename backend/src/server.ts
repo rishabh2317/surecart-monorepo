@@ -1,9 +1,11 @@
 // src/server.ts
-import Fastify, { FastifyRequest, FastifyReply } from 'fastify';
-import cors from '@fastify/cors';
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcrypt';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+const Fastify = require('fastify');
+import type { FastifyRequest, FastifyReply } from 'fastify';
+const cors = require('@fastify/cors');
+const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcrypt');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+
 
 
 
@@ -32,7 +34,7 @@ const AI_API_CALL_LIMIT = 10; // Our own internal monthly limit
 
 // Enhanced CORS configuration
 server.register(cors, {
-   origin: (origin, cb) => {
+   origin: (origin: string, cb: (err: Error | null, allow?: boolean) => void) => {
      if (!origin) return cb(null, true);
     
      const allowedOrigins = [
@@ -83,7 +85,7 @@ server.get('/health', async (request: FastifyRequest, reply: FastifyReply) => {
  });
 
 
-server.get('/dashboard/:userId/analytics', async (request, reply) => {
+server.get('/dashboard/:userId/analytics', async (request: { params: { userId: string; }; }, reply: { send: (arg0: { summary: { totalAudience: any; engagements: any; outboundClicks: any; saves: any; totalLikes: any; followers: any; }; performanceOverTime: { Clicks: number; Likes: number; Engagements: number; date: string; }[]; topCollections: any; }) => void; code: (arg0: number) => { (): any; new(): any; send: { (arg0: { message: string; }): void; new(): any; }; }; }) => {
   const { userId } = request.params as { userId: string };
   try {
       // --- 1. Fetch Real Data ---
@@ -138,11 +140,11 @@ server.get('/dashboard/:userId/analytics', async (request, reply) => {
 
 
 
-      clicksByDayRaw.forEach(row => {
+      clicksByDayRaw.forEach((row: { createdAt: string | number | Date; _count: { _all: number; }; }) => {
           const key = new Date(row.createdAt).toISOString().split('T')[0];
           if (dateMap.has(key)) dateMap.get(key)!.Clicks += row._count._all;
       });
-      likesByDayRaw.forEach(row => {
+      likesByDayRaw.forEach((row: { createdAt: string | number | Date; _count: { _all: number; }; }) => {
           const key = new Date(row.createdAt).toISOString().split('T')[0];
           if (dateMap.has(key)) dateMap.get(key)!.Likes += row._count._all;
       });
@@ -161,13 +163,13 @@ server.get('/dashboard/:userId/analytics', async (request, reply) => {
 
 
       // --- 4. Calculate Summary and Top Collections ---
-      const totalClicks = collections.reduce((sum, col) => sum + col._count.clicks, 0);
-      const totalLikes = collections.reduce((sum, col) => sum + col._count.likedBy, 0);
+      const totalClicks = collections.reduce((sum: any, col: { _count: { clicks: any; }; }) => sum + col._count.clicks, 0);
+      const totalLikes = collections.reduce((sum: any, col: { _count: { likedBy: any; }; }) => sum + col._count.likedBy, 0);
     
-      const topCollections = collections.map(c => ({
+      const topCollections = collections.map((c: { id: any; name: any; _count: { clicks: number; likedBy: number; }; }) => ({
           id: c.id, name: c.name, clicks: c._count.clicks, likes: c._count.likedBy,
           shares: Math.floor(c._count.clicks / 10 + c._count.likedBy * 2),
-      })).sort((a, b) => b.clicks - a.clicks).slice(0, 5);
+      })).sort((a: { clicks: number; }, b: { clicks: number; }) => b.clicks - a.clicks).slice(0, 5);
 
 
 
@@ -204,7 +206,7 @@ const mockProducts = [
 
 
 // --- AUTHENTICATION ROUTES ---
-server.post('/register', async (request, reply) => {
+server.post('/register', async (request: { body: any; }, reply: { code: (arg0: number) => { (): any; new(): any; send: { (arg0: { message: string; }): void; new(): any; }; }; }) => {
 const { email, password, username, role = 'CREATOR' } = request.body as any;
 if (!email || !password || !username) return reply.code(400).send({ message: 'All fields are required.' });
 try {
@@ -221,7 +223,7 @@ try {
 
 
 
-server.post('/login', async (request, reply) => {
+server.post('/login', async (request: { body: any; }, reply: { code: (arg0: number) => { (): any; new(): any; send: { (arg0: { message: string; }): void; new(): any; }; }; send: (arg0: any) => void; }) => {
   const { email, password } = request.body as any;
   if (!email || !password) return reply.code(400).send({ message: 'Email and password are required.' });
   try {
@@ -234,7 +236,7 @@ server.post('/login', async (request, reply) => {
   } catch (error) { server.log.error(error); reply.code(500).send({ message: 'Server error.' }); }
 });
 // POST /auth/social
-server.post('/auth/social', async (request, reply) => {
+server.post('/auth/social', async (request: { body: any; }, reply: { code: (arg0: number) => { (): any; new(): any; send: { (arg0: { message: string; }): void; new(): any; }; }; send: (arg0: any) => void; }) => {
   const { email, username, authProviderId, profileImageUrl } = request.body as any;
 
 
@@ -274,7 +276,7 @@ server.post('/auth/social', async (request, reply) => {
 
 
 
-server.put('/users/:userId/upgrade-to-creator', async (request, reply) => {
+server.put('/users/:userId/upgrade-to-creator', async (request: { params: { userId: string; }; body: any; }, reply: { send: (arg0: any) => void; code: (arg0: number) => { (): any; new(): any; send: { (arg0: { message: string; }): void; new(): any; }; }; }) => {
   const { userId } = request.params as { userId: string };
   const { fullName, phone, instagramHandle, profileImageUrl } = request.body as any;
 
@@ -304,7 +306,7 @@ server.put('/users/:userId/upgrade-to-creator', async (request, reply) => {
 
 
 // POST /brands/register
-server.post('/brands/register', async (request, reply) => {
+server.post('/brands/register', async (request: { body: any; }, reply: { code: (arg0: number) => { (): any; new(): any; send: { (arg0: { message: string; }): void; new(): any; }; }; }) => {
   const { brandName, category, presence, website, email, name } = request.body as any;
 
 
@@ -355,7 +357,7 @@ server.post('/brands/register', async (request, reply) => {
 
 
 // --- SHOPPER ENGAGEMENT ROUTES ---
-server.post('/collections/:collectionId/like', async (request, reply) => {
+server.post('/collections/:collectionId/like', async (request: { params: { collectionId: string; }; body: { userId: string; }; }, reply: { code: (arg0: number) => { (): any; new(): any; send: { (arg0: { message?: string; isLiked?: boolean; }): void; new(): any; }; }; }) => {
   const { collectionId } = request.params as { collectionId: string };
   const { userId } = request.body as { userId: string };
   if (!userId) return reply.code(400).send({ message: "User ID is required." });
@@ -371,7 +373,7 @@ server.post('/collections/:collectionId/like', async (request, reply) => {
 
 
 
-server.delete('/collections/:collectionId/unlike', async (request, reply) => {
+server.delete('/collections/:collectionId/unlike', async (request: { params: { collectionId: string; }; body: { userId: string; }; }, reply: { code: (arg0: number) => { (): any; new(): any; send: { (arg0: { message?: string; isLiked?: boolean; }): void; new(): any; }; }; }) => {
   const { collectionId } = request.params as { collectionId: string };
   const { userId } = request.body as { userId: string };
   if (!userId) return reply.code(400).send({ message: "User ID is required." });
@@ -389,7 +391,7 @@ server.delete('/collections/:collectionId/unlike', async (request, reply) => {
 
 
 
-server.post('/users/:creatorId/follow', async (request, reply) => {
+server.post('/users/:creatorId/follow', async (request: { params: { creatorId: string; }; body: { userId: string; }; }, reply: { code: (arg0: number) => { (): any; new(): any; send: { (arg0: { message: string; }): void; new(): any; }; }; }) => {
   const { creatorId } = request.params as { creatorId: string };
   const { userId } = request.body as { userId: string }; // The user who is doing the following
    if (!userId) return reply.code(400).send({ message: "User ID is required." });
@@ -417,7 +419,7 @@ server.post('/users/:creatorId/follow', async (request, reply) => {
 
 
 
-server.delete('/users/:creatorId/unfollow', async (request, reply) => {
+server.delete('/users/:creatorId/unfollow', async (request: { params: { creatorId: string; }; body: { userId: string; }; }, reply: { code: (arg0: number) => { (): any; new(): any; send: { (arg0: { message: string; } | undefined): void; new(): any; }; }; }) => {
   const { creatorId } = request.params as { creatorId: string };
   const { userId } = request.body as { userId: string };
    if (!userId) return reply.code(400).send({ message: "User ID is required." });
@@ -434,7 +436,7 @@ server.delete('/users/:creatorId/unfollow', async (request, reply) => {
               },
           },
       });
-      reply.code(204).send();
+      reply.code(204).send({ message: 'Unfollowed successfully' });
   } catch (error) {
       server.log.error(error);
       reply.code(500).send({ message: "Could not unfollow user." });
@@ -444,7 +446,7 @@ server.delete('/users/:creatorId/unfollow', async (request, reply) => {
 
 
 
-server.get('/users/:userId/follow-status/:creatorId', async (request, reply) => {
+server.get('/users/:userId/follow-status/:creatorId', async (request: { params: { userId: string; creatorId: string; }; }, reply: { send: (arg0: { isFollowing: boolean; }) => void; code: (arg0: number) => { (): any; new(): any; send: { (arg0: { message: string; }): void; new(): any; }; }; }) => {
   const { userId, creatorId } = request.params as { userId: string, creatorId: string };
   try {
       const follow = await prisma.follow.findUnique({
@@ -465,7 +467,7 @@ server.get('/users/:userId/follow-status/:creatorId', async (request, reply) => 
 
 
 
-server.post('/collections/:collectionId/comments', async (request, reply) => {
+server.post('/collections/:collectionId/comments', async (request: { params: { collectionId: string; }; body: { userId: string; text: string; }; }, reply: { code: (arg0: number) => { (): any; new(): any; send: { (arg0: { message: string; }): void; new(): any; }; }; }) => {
   const { collectionId } = request.params as { collectionId: string };
   const { userId, text } = request.body as { userId: string, text: string };
   try {
@@ -480,7 +482,7 @@ server.post('/collections/:collectionId/comments', async (request, reply) => {
 
 
 
-server.get('/users/:userId/liked-status/:collectionId', async (request, reply) => {
+server.get('/users/:userId/liked-status/:collectionId', async (request: { params: { userId: string; collectionId: string; }; }, reply: { send: (arg0: { isLiked: boolean; }) => void; code: (arg0: number) => { (): any; new(): any; send: { (arg0: { message: string; }): void; new(): any; }; }; }) => {
   const { userId, collectionId } = request.params as { userId: string, collectionId: string };
   try {
       const like = await prisma.userLikes.findUnique({ where: { userId_collectionId: { userId, collectionId } } });
@@ -491,7 +493,7 @@ server.get('/users/:userId/liked-status/:collectionId', async (request, reply) =
 
 
 
-server.get('/users/:userId/likes', async (request, reply) => {
+server.get('/users/:userId/likes', async (request: { params: { userId: string; }; }, reply: { send: (arg0: any) => void; code: (arg0: number) => { (): any; new(): any; send: { (arg0: { message: string; }): void; new(): any; }; }; }) => {
   const { userId } = request.params as { userId: string };
   try {
       const likedCollections = await prisma.userLikes.findMany({
@@ -509,7 +511,7 @@ server.get('/users/:userId/likes', async (request, reply) => {
               }
           }
       });
-      const response = likedCollections.map(like => ({
+      const response = likedCollections.map((like: { collection: { id: any; name: string | number | boolean; slug: any; user: { username: string; profileImageUrl: any; }; products: { product: { imageUrls: any[]; }; }[]; }; }) => ({
           id: like.collection.id,
           name: like.collection.name,
           slug: like.collection.slug,
@@ -521,7 +523,7 @@ server.get('/users/:userId/likes', async (request, reply) => {
   } catch (error) { server.log.error(error); reply.code(500).send({ message: "Error fetching liked collections" }); }
 });
 // GET /collections/:collectionId/comments
-server.get('/collections/:collectionId/comments', async (request, reply) => {
+server.get('/collections/:collectionId/comments', async (request: { params: { collectionId: string; }; }, reply: { send: (arg0: any) => void; code: (arg0: number) => { (): any; new(): any; send: { (arg0: { message: string; }): void; new(): any; }; }; }) => {
   const { collectionId } = request.params as { collectionId: string };
   try {
       const comments = await prisma.comment.findMany({
@@ -540,7 +542,7 @@ server.get('/collections/:collectionId/comments', async (request, reply) => {
 
 
 // POST /products/ask-ai
-server.post('/products/ask-ai', async (request, reply) => {
+server.post('/products/ask-ai', async (request: { body: { productName: string; }; }, reply: { code: (arg0: number) => { (): any; new(): any; send: { (arg0: { message: string; }): void; new(): any; }; }; send: (arg0: { summary: any; }) => void; }) => {
   const { productName } = request.body as { productName: string };
   if (!process.env.GEMINI_API_KEY) {
     server.log.error('GEMINI_API_KEY is not configured.');
@@ -581,7 +583,7 @@ Keep the language neutral and objective.`;
   }
 });
 // --- CREATOR DASHBOARD & COLLECTION MANAGEMENT ---
-server.get('/dashboard/:userId', async (request, reply) => {
+server.get('/dashboard/:userId', async (request: { params: { userId: string; }; }, reply: { code: (arg0: number) => { (): any; new(): any; send: { (arg0: { message: string; }): void; new(): any; }; }; send: (arg0: { collections: any; }) => void; }) => {
   const { userId } = request.params as { userId: string };
   try {
       const user = await prisma.user.findUnique({ where: { id: userId } });
@@ -594,7 +596,7 @@ server.get('/dashboard/:userId', async (request, reply) => {
           where: { userId },
           include: { _count: { select: { products: true, likedBy: true } } }
       });
-      const responseData = collections.map(c => ({
+      const responseData = collections.map((c: { id: any; name: any; slug: any; _count: { products: any; likedBy: any; }; }) => ({
           id: c.id, name: c.name, slug: c.slug,
           productsCount: c._count.products,
           likes: c._count.likedBy,
@@ -608,7 +610,7 @@ server.get('/dashboard/:userId', async (request, reply) => {
 
 
 
-server.get('/collections/:id', async (request, reply) => {
+server.get('/collections/:id', async (request: { params: { id: string; }; }, reply: { code: (arg0: number) => { (): any; new(): any; send: { (arg0: { message: string; }): void; new(): any; }; }; send: (arg0: { id: any; name: any; products: any; }) => void; }) => {
   const { id } = request.params as { id: string };
   try {
       const collection = await prisma.collection.findUnique({
@@ -618,7 +620,7 @@ server.get('/collections/:id', async (request, reply) => {
       if (!collection) return reply.code(404).send({ message: "Collection not found" });
       const response = {
           id: collection.id, name: collection.name,
-          products: collection.products.map(cp => ({ id: cp.product.id, name: cp.product.name, imageUrl: cp.product.imageUrls[0], brand: cp.product.brand?.name || "Brand" }))
+          products: collection.products.map((cp: { product: { id: any; name: any; imageUrls: any[]; brand: { name: any; }; }; }) => ({ id: cp.product.id, name: cp.product.name, imageUrl: cp.product.imageUrls[0], brand: cp.product.brand?.name || "Brand" }))
       };
       reply.send(response);
   } catch (error) { server.log.error(error); reply.code(500).send({ message: "Error fetching collection details" }); }
@@ -627,7 +629,7 @@ server.get('/collections/:id', async (request, reply) => {
 
 
 
-server.post('/collections', async (request, reply) => {
+server.post('/collections', async (request: { body: any; }, reply: { code: (arg0: number) => { (): any; new(): any; send: { (arg0: { message: string; }): void; new(): any; }; }; }) => {
   let { name, products, userId, description, coverImageUrl } = request.body as any;
   try {
       // --- VALIDATION STEP ---
@@ -672,18 +674,18 @@ server.post('/collections', async (request, reply) => {
 
 
 
-server.delete('/collections/:id', async (request, reply) => {
+server.delete('/collections/:id', async (request: { params: { id: string; }; }, reply: { code: (arg0: number) => { (): any; new(): any; send: { (arg0: { message: string; } | undefined): void; new(): any; }; }; }) => {
   const { id } = request.params as { id: string };
   try {
       await prisma.collectionProduct.deleteMany({ where: { collectionId: id } });
       await prisma.click.deleteMany({ where: { collectionId: id } });
       await prisma.userLikes.deleteMany({ where: { collectionId: id } });
       await prisma.collection.delete({ where: { id } });
-      reply.code(204).send();
+      reply.code(204).send({ message: "Collection deleted successfully" });
   } catch (error) { server.log.error(error); reply.code(500).send({ message: "Error deleting collection" }); }
 });
 // PUT /collections/:id
-server.put('/collections/:id', async (request, reply) => {
+server.put('/collections/:id', async (request: { params: { id: string; }; body: any; }, reply: { send: (arg0: any) => void; code: (arg0: number) => { (): any; new(): any; send: { (arg0: { message: string; }): void; new(): any; }; }; }) => {
   const { id } = request.params as { id: string };
   const { name, products } = request.body as any; // Add description, coverImageUrl etc. as needed
 
@@ -720,7 +722,7 @@ server.put('/collections/:id', async (request, reply) => {
   }
 });
 // GET /brands/:brandId/dashboard
-server.get('/brands/:brandId/dashboard', async (request, reply) => {
+server.get('/brands/:brandId/dashboard', async (request: { params: { brandId: string; }; }, reply: { send: (arg0: { summary: { totalClicks: any; totalCollections: any; topCreator: any; }; topCreators: any; }) => void; code: (arg0: number) => { (): any; new(): any; send: { (arg0: { message: string; }): void; new(): any; }; }; }) => {
   const { brandId } = request.params as { brandId: string };
   try {
       // Find all collections that feature this brand's products
@@ -737,15 +739,15 @@ server.get('/brands/:brandId/dashboard', async (request, reply) => {
 
 
 
-      const totalClicks = collectionsWithBrandProducts.reduce((sum, col) => sum + col._count.clicks, 0);
+      const totalClicks = collectionsWithBrandProducts.reduce((sum: any, col: { _count: { clicks: any; }; }) => sum + col._count.clicks, 0);
     
-      const topCreators = collectionsWithBrandProducts.map(col => ({
+      const topCreators = collectionsWithBrandProducts.map((col: { user: { id: any; username: any; profileImageUrl: any; }; name: any; _count: { clicks: any; }; }) => ({
           id: col.user.id,
           username: col.user.username,
           profileImageUrl: col.user.profileImageUrl,
           collectionName: col.name,
           clicks: col._count.clicks,
-      })).sort((a, b) => b.clicks - a.clicks).slice(0, 5); // Top 5
+      })).sort((a: { clicks: number; }, b: { clicks: number; }) => b.clicks - a.clicks).slice(0, 5); // Top 5
 
 
 
@@ -765,7 +767,7 @@ server.get('/brands/:brandId/dashboard', async (request, reply) => {
 });
 // GET /users/:userId/rewards
 // GET /users/:userId/rewards
-server.get('/users/:userId/rewards', async (request, reply) => {
+server.get('/users/:userId/rewards', async (request: { params: { userId: string; }; }, reply: { send: (arg0: { wallet: { balance: any; currency: string; }; coupons: any; transactions: any; }) => void; code: (arg0: number) => { (): any; new(): any; send: { (arg0: { message: string; }): void; new(): any; }; }; }) => {
   const { userId } = request.params as { userId: string };
   try {
       const coupons = await prisma.coupon.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } });
@@ -780,8 +782,8 @@ server.get('/users/:userId/rewards', async (request, reply) => {
 
       // Calculate the wallet balance from approved transactions
       const balance = transactions
-          .filter(t => t.status === 'APPROVED')
-          .reduce((sum, t) => sum + t.amount, 0);
+          .filter((t: { status: string; }) => t.status === 'APPROVED')
+          .reduce((sum: any, t: { amount: any; }) => sum + t.amount, 0);
 
 
 
@@ -805,7 +807,7 @@ server.get('/users/:userId/rewards', async (request, reply) => {
 
 
 // --- PUBLIC & UNIVERSAL ROUTES ---
-server.get('/products/search', async (request, reply) => {
+server.get('/products/search', async (request: { query: { q?: string | undefined; brandId?: string | undefined; }; }, reply: { code: (arg0: number) => { (): any; new(): any; send: { (arg0: { message: string; }): void; new(): any; }; }; }) => {
   const { q, brandId } = request.query as { q?: string, brandId?: string };
   try {
       const products = await prisma.product.findMany({
@@ -823,7 +825,7 @@ server.get('/products/search', async (request, reply) => {
 
 
 
-      const response = products.map(p => ({
+      const response = products.map((p: { id: any; name: any; brand: { name: any; }; imageUrls: any[]; }) => ({
           id: p.id,
           name: p.name,
           // This is the FIX: Safely access the brand name
@@ -841,7 +843,7 @@ server.get('/products/search', async (request, reply) => {
 
 
 // POST /public/collections/:collectionId/view
-server.post('/public/collections/:collectionId/view', async (request, reply) => {
+server.post('/public/collections/:collectionId/view', async (request: { params: { collectionId: string; }; body: { userId?: string | undefined; }; }, reply: { code: (arg0: number) => { (): any; new(): any; send: { (arg0: { message: string; }): void; new(): any; }; }; }) => {
   const { collectionId } = request.params as { collectionId: string };
   const { userId } = request.body as { userId?: string }; // userId is optional
 
@@ -866,7 +868,7 @@ server.post('/public/collections/:collectionId/view', async (request, reply) => 
 
 
 // GET /brands
-server.get('/brands', async (request, reply) => {
+server.get('/brands', async (request: any, reply: { send: (arg0: any) => void; code: (arg0: number) => { (): any; new(): any; send: { (arg0: { message: string; }): void; new(): any; }; }; }) => {
   try {
       const brands = await prisma.brand.findMany({
           orderBy: { name: 'asc' }
@@ -888,7 +890,7 @@ server.get('/public/home', async (request: FastifyRequest, reply: FastifyReply) 
               products: { take: 1, orderBy: { displayOrder: 'asc' }, include: { product: { select: { imageUrls: true } } } }
           }
       });
-      const response = collections.map(c => ({
+      const response = collections.map((c: { id: any; name: string | number | boolean; slug: any; user: { username: string; profileImageUrl: any; }; coverImageUrl: any; products: { product: { imageUrls: any[]; }; }[]; }) => ({
           id: c.id, name: c.name, slug: c.slug, author: c.user.username,
           authorAvatar: c.user.profileImageUrl || `https://placehold.co/100x100/E2E8F0/475569?text=${c.user.username.charAt(0).toUpperCase()}`,
           coverImage: c.coverImageUrl || c.products[0]?.product.imageUrls[0] || `https://placehold.co/400x300/cccccc/333333?text=${encodeURIComponent(c.name)}`
@@ -915,11 +917,11 @@ server.get('/public/explore', async (request: FastifyRequest, reply: FastifyRepl
       const newCollections = await prisma.collection.findMany({
           where: { createdAt: { gte: sevenDaysAgo } }, take: 5, orderBy: { createdAt: 'desc' },
           include: { user: true, products: { take: 1, orderBy: { displayOrder: 'asc' }, include: { product: true } } }
-      }).then(res => res.map(mapCollection));
+      }).then((res: any[]) => res.map(mapCollection));
       const trendingCollections = await prisma.collection.findMany({
           take: 5, orderBy: { likedBy: { _count: 'desc' } },
           include: { user: true, products: { take: 1, orderBy: { displayOrder: 'asc' }, include: { product: true } } }
-      }).then(res => res.map(mapCollection));
+      }).then((res: any[]) => res.map(mapCollection));
       reply.send({ new: newCollections, trending: trendingCollections });
   } catch (error) { server.log.error(error); reply.code(500).send({ message: "Error fetching explore data" }); }
 });
@@ -927,7 +929,7 @@ server.get('/public/explore', async (request: FastifyRequest, reply: FastifyRepl
 
 
 
-server.get('/public/collections/:username/:slug', async (request, reply) => {
+server.get('/public/collections/:username/:slug', async (request: { params: { username?: string | undefined; slug?: string | undefined; }; }, reply: { code: (arg0: number) => { (): any; new(): any; send: { (arg0: { message: string; }): void; new(): any; }; }; send: (arg0: { id: any; name: any; description: any; author: any; authorId: any; authorAvatar: any; products: any; }) => void; }) => {
   const { username, slug } = request.params as { username?: string, slug?: string };
 
 
@@ -945,7 +947,7 @@ if (!username || !slug) {
       const publicCollection = {
           id: collection.id, name: collection.name, description: collection.description,
           author: collection.user.username, authorId: collection.user.id, authorAvatar: collection.user.profileImageUrl || `https://placehold.co/100x100/E2E8F0/475569?text=${collection.user.username.charAt(0).toUpperCase()}`,
-          products: collection.products.map(cp => ({ id: cp.product.id, name: cp.product.name, imageUrl: cp.product.imageUrls[0], brand: cp.product.brand?.name || "Brand", buyUrl: `/redirect?collectionId=${collection.id}&productId=${cp.product.id}&affiliateUrl=${encodeURIComponent(cp.product.baseUrl)}` }))
+          products: collection.products.map((cp: { product: { id: any; name: any; imageUrls: any[]; brand: { name: any; }; baseUrl: string | number | boolean; }; }) => ({ id: cp.product.id, name: cp.product.name, imageUrl: cp.product.imageUrls[0], brand: cp.product.brand?.name || "Brand", buyUrl: `/redirect?collectionId=${collection.id}&productId=${cp.product.id}&affiliateUrl=${encodeURIComponent(cp.product.baseUrl)}` }))
       };
       reply.send(publicCollection);
   } catch (error) { server.log.error(error); reply.code(500).send({ message: "Error fetching public collection" }); }
@@ -954,7 +956,7 @@ if (!username || !slug) {
 
 
 
-server.get('/redirect', async (request, reply) => {
+server.get('/redirect', async (request: { query: any; headers: { [x: string]: string; }; ip: any; }, reply: { code: (arg0: number) => { (): any; new(): any; send: { (arg0: { message: string; }): any; new(): any; }; header: { (arg0: string, arg1: string): { (): any; new(): any; send: { (): any; new(): any; }; }; new(): any; }; }; }) => {
   const { collectionId, productId, affiliateUrl } = request.query as any;
   const decodedUrl = decodeURIComponent(affiliateUrl);
 
@@ -1054,10 +1056,3 @@ const start = async () => {
  start();
   // Export for testing purposes
  export { server };
-
-
-
-
-
-
-
