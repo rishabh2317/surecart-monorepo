@@ -934,7 +934,10 @@ server.get('/redirect', async (request: FastifyRequest, reply: FastifyReply) => 
 // --- ENHANCED SERVER START FUNCTION ---
 const start = async () => {
     try {
-      const port = process.env.PORT || 3001;
+        const port = Number(process.env.PORT);
+        if (!port) {
+          throw new Error("❌ process.env.PORT is not defined. Railway requires it.");
+        }
       const host = '0.0.0.0'; // This is critical for deployment platforms like Railway
   
       server.log.info('🔧 Starting server with configuration:');
@@ -963,6 +966,7 @@ const start = async () => {
   
     } catch (err) {
       server.log.error('❌ Server startup failed:', err);
+      process.exitCode = 1; 
       // Graceful shutdown
       await prisma.$disconnect();
       process.exit(1);
