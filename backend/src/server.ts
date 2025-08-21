@@ -1,9 +1,10 @@
 // src/server.ts
-import Fastify from 'fastify';
+import Fastify, { FastifyRequest, FastifyReply } from 'fastify';
 import cors from '@fastify/cors';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+
 
 // Initialize server with better logging
 const server = Fastify({ 
@@ -54,11 +55,11 @@ server.register(cors, {
   });
 
 // Add OPTIONS handler for preflight requests
-server.options('/*', async (request, reply) => {
+server.options('/*', async (request: FastifyRequest, reply: FastifyReply) => {
     reply.status(200).send();
 });
 // --- HEALTH CHECK ROUTE ---
-server.get('/health', async (request, reply) => {
+server.get('/health', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       // Test database connection
       await prisma.$queryRaw`SELECT 1`;
@@ -77,7 +78,7 @@ server.get('/health', async (request, reply) => {
     }
   });
 
-server.get('/dashboard/:userId/analytics', async (request, reply) => {
+server.get('/dashboard/:userId/analytics', async (request: FastifyRequest, reply: FastifyReply) => {
    const { userId } = request.params as { userId: string };
    try {
        // --- 1. Fetch Real Data ---
@@ -180,7 +181,7 @@ const mockProducts = [
 
 
 // --- AUTHENTICATION ROUTES ---
-server.post('/register', async (request, reply) => {
+server.post('/register', async (request: FastifyRequest, reply: FastifyReply) => {
  const { email, password, username, role = 'CREATOR' } = request.body as any;
  if (!email || !password || !username) return reply.code(400).send({ message: 'All fields are required.' });
  try {
@@ -195,7 +196,7 @@ server.post('/register', async (request, reply) => {
 });
 
 
-server.post('/login', async (request, reply) => {
+server.post('/login', async (request: FastifyRequest, reply: FastifyReply) => {
    const { email, password } = request.body as any;
    if (!email || !password) return reply.code(400).send({ message: 'Email and password are required.' });
    try {
@@ -208,7 +209,7 @@ server.post('/login', async (request, reply) => {
    } catch (error) { server.log.error(error); reply.code(500).send({ message: 'Server error.' }); }
 });
 // POST /auth/social
-server.post('/auth/social', async (request, reply) => {
+server.post('/auth/social', async (request: FastifyRequest, reply: FastifyReply) => {
    const { email, username, authProviderId, profileImageUrl } = request.body as any;
 
 
@@ -240,7 +241,7 @@ server.post('/auth/social', async (request, reply) => {
 });
 
 
-server.put('/users/:userId/upgrade-to-creator', async (request, reply) => {
+server.put('/users/:userId/upgrade-to-creator', async (request: FastifyRequest, reply: FastifyReply) => {
    const { userId } = request.params as { userId: string };
    const { fullName, phone, instagramHandle, profileImageUrl } = request.body as any;
 
@@ -266,7 +267,7 @@ server.put('/users/:userId/upgrade-to-creator', async (request, reply) => {
 
 
 // POST /brands/register
-server.post('/brands/register', async (request, reply) => {
+server.post('/brands/register', async (request: FastifyRequest, reply: FastifyReply) => {
    const { brandName, category, presence, website, email, name } = request.body as any;
 
 
@@ -309,7 +310,7 @@ server.post('/brands/register', async (request, reply) => {
 
 
 // --- SHOPPER ENGAGEMENT ROUTES ---
-server.post('/collections/:collectionId/like', async (request, reply) => {
+server.post('/collections/:collectionId/like', async (request: FastifyRequest, reply: FastifyReply) => {
    const { collectionId } = request.params as { collectionId: string };
    const { userId } = request.body as { userId: string };
    if (!userId) return reply.code(400).send({ message: "User ID is required." });
@@ -323,7 +324,7 @@ server.post('/collections/:collectionId/like', async (request, reply) => {
 });
 
 
-server.delete('/collections/:collectionId/unlike', async (request, reply) => {
+server.delete('/collections/:collectionId/unlike', async (request: FastifyRequest, reply: FastifyReply) => {
    const { collectionId } = request.params as { collectionId: string };
    const { userId } = request.body as { userId: string };
    if (!userId) return reply.code(400).send({ message: "User ID is required." });
@@ -337,7 +338,7 @@ server.delete('/collections/:collectionId/unlike', async (request, reply) => {
 // --- FOLLOW / UNFOLLOW ROUTES ---
 
 
-server.post('/users/:creatorId/follow', async (request, reply) => {
+server.post('/users/:creatorId/follow', async (request: FastifyRequest, reply: FastifyReply) => {
    const { creatorId } = request.params as { creatorId: string };
    const { userId } = request.body as { userId: string }; // The user who is doing the following
   
@@ -362,7 +363,7 @@ server.post('/users/:creatorId/follow', async (request, reply) => {
 });
 
 
-server.delete('/users/:creatorId/unfollow', async (request, reply) => {
+server.delete('/users/:creatorId/unfollow', async (request: FastifyRequest, reply: FastifyReply) => {
    const { creatorId } = request.params as { creatorId: string };
    const { userId } = request.body as { userId: string };
   
@@ -386,7 +387,7 @@ server.delete('/users/:creatorId/unfollow', async (request, reply) => {
 });
 
 
-server.get('/users/:userId/follow-status/:creatorId', async (request, reply) => {
+server.get('/users/:userId/follow-status/:creatorId', async (request: FastifyRequest, reply: FastifyReply) => {
    const { userId, creatorId } = request.params as { userId: string, creatorId: string };
    try {
        const follow = await prisma.follow.findUnique({
@@ -405,7 +406,7 @@ server.get('/users/:userId/follow-status/:creatorId', async (request, reply) => 
 });
 
 
-server.post('/collections/:collectionId/comments', async (request, reply) => {
+server.post('/collections/:collectionId/comments', async (request: FastifyRequest, reply: FastifyReply) => {
    const { collectionId } = request.params as { collectionId: string };
    const { userId, text } = request.body as { userId: string, text: string };
    try {
@@ -418,7 +419,7 @@ server.post('/collections/:collectionId/comments', async (request, reply) => {
 });
 
 
-server.get('/users/:userId/liked-status/:collectionId', async (request, reply) => {
+server.get('/users/:userId/liked-status/:collectionId', async (request: FastifyRequest, reply: FastifyReply) => {
    const { userId, collectionId } = request.params as { userId: string, collectionId: string };
    try {
        const like = await prisma.userLikes.findUnique({ where: { userId_collectionId: { userId, collectionId } } });
@@ -427,7 +428,7 @@ server.get('/users/:userId/liked-status/:collectionId', async (request, reply) =
 });
 
 
-server.get('/users/:userId/likes', async (request, reply) => {
+server.get('/users/:userId/likes', async (request: FastifyRequest, reply: FastifyReply) => {
    const { userId } = request.params as { userId: string };
    try {
        const likedCollections = await prisma.userLikes.findMany({
@@ -457,7 +458,7 @@ server.get('/users/:userId/likes', async (request, reply) => {
    } catch (error) { server.log.error(error); reply.code(500).send({ message: "Error fetching liked collections" }); }
 });
 // GET /collections/:collectionId/comments
-server.get('/collections/:collectionId/comments', async (request, reply) => {
+server.get('/collections/:collectionId/comments', async (request: FastifyRequest, reply: FastifyReply) => {
    const { collectionId } = request.params as { collectionId: string };
    try {
        const comments = await prisma.comment.findMany({
@@ -474,7 +475,7 @@ server.get('/collections/:collectionId/comments', async (request, reply) => {
 
 
 // POST /products/ask-ai
-server.post('/products/ask-ai', async (request, reply) => {
+server.post('/products/ask-ai', async (request: FastifyRequest, reply: FastifyReply) => {
    const { productName } = request.body as { productName: string };
    if (aiApiCallCount >= AI_API_CALL_LIMIT) {
        return reply.code(429).send({ message: "This feature is temporarily unavailable due to high demand. Please try again later." });
@@ -508,7 +509,7 @@ Keep the language neutral and objective.`;
    }
 });
 // --- CREATOR DASHBOARD & COLLECTION MANAGEMENT ---
-server.get('/dashboard/:userId', async (request, reply) => {
+server.get('/dashboard/:userId', async (request: FastifyRequest, reply: FastifyReply) => {
    const { userId } = request.params as { userId: string };
    try {
        const user = await prisma.user.findUnique({ where: { id: userId } });
@@ -531,7 +532,7 @@ server.get('/dashboard/:userId', async (request, reply) => {
 });
 
 
-server.get('/collections/:id', async (request, reply) => {
+server.get('/collections/:id', async (request: FastifyRequest, reply: FastifyReply) => {
    const { id } = request.params as { id: string };
    try {
        const collection = await prisma.collection.findUnique({
@@ -548,7 +549,7 @@ server.get('/collections/:id', async (request, reply) => {
 });
 
 
-server.post('/collections', async (request, reply) => {
+server.post('/collections', async (request: FastifyRequest, reply: FastifyReply) => {
    let { name, products, userId, description, coverImageUrl } = request.body as any;
    try {
        // --- VALIDATION STEP ---
@@ -585,7 +586,7 @@ server.post('/collections', async (request, reply) => {
 });
 
 
-server.delete('/collections/:id', async (request, reply) => {
+server.delete('/collections/:id', async (request: FastifyRequest, reply: FastifyReply) => {
    const { id } = request.params as { id: string };
    try {
        await prisma.collectionProduct.deleteMany({ where: { collectionId: id } });
@@ -596,7 +597,7 @@ server.delete('/collections/:id', async (request, reply) => {
    } catch (error) { server.log.error(error); reply.code(500).send({ message: "Error deleting collection" }); }
 });
 // PUT /collections/:id
-server.put('/collections/:id', async (request, reply) => {
+server.put('/collections/:id', async (request: FastifyRequest, reply: FastifyReply) => {
    const { id } = request.params as { id: string };
    const { name, products } = request.body as any; // Add description, coverImageUrl etc. as needed
 
@@ -629,7 +630,7 @@ server.put('/collections/:id', async (request, reply) => {
    }
 });
 // GET /brands/:brandId/dashboard
-server.get('/brands/:brandId/dashboard', async (request, reply) => {
+server.get('/brands/:brandId/dashboard', async (request: FastifyRequest, reply: FastifyReply) => {
    const { brandId } = request.params as { brandId: string };
    try {
        // Find all collections that feature this brand's products
@@ -670,7 +671,7 @@ server.get('/brands/:brandId/dashboard', async (request, reply) => {
 });
 // GET /users/:userId/rewards
 // GET /users/:userId/rewards
-server.get('/users/:userId/rewards', async (request, reply) => {
+server.get('/users/:userId/rewards', async (request: FastifyRequest, reply: FastifyReply) => {
    const { userId } = request.params as { userId: string };
    try {
        const coupons = await prisma.coupon.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } });
@@ -702,7 +703,7 @@ server.get('/users/:userId/rewards', async (request, reply) => {
 
 
 // --- PUBLIC & UNIVERSAL ROUTES ---
-server.get('/products/search', async (request, reply) => {
+server.get('/products/search', async (request: FastifyRequest, reply: FastifyReply) => {
    const { q, brandId } = request.query as { q?: string, brandId?: string };
    try {
        const products = await prisma.product.findMany({
@@ -734,7 +735,7 @@ server.get('/products/search', async (request, reply) => {
 
 
 // POST /public/collections/:collectionId/view
-server.post('/public/collections/:collectionId/view', async (request, reply) => {
+server.post('/public/collections/:collectionId/view', async (request: FastifyRequest, reply: FastifyReply) => {
    const { collectionId } = request.params as { collectionId: string };
    const { userId } = request.body as { userId?: string }; // userId is optional
 
@@ -755,7 +756,7 @@ server.post('/public/collections/:collectionId/view', async (request, reply) => 
 
 
 // GET /brands
-server.get('/brands', async (request, reply) => {
+server.get('/brands', async (request: FastifyRequest, reply: FastifyReply) => {
    try {
        const brands = await prisma.brand.findMany({
            orderBy: { name: 'asc' }
@@ -767,7 +768,7 @@ server.get('/brands', async (request, reply) => {
    }
 });
 // NEW: This powers the Pinterest-style infinite feed on the homepage
-server.get('/public/home', async (request, reply) => {
+server.get('/public/home', async (request: FastifyRequest, reply: FastifyReply) => {
    try {
        const collections = await prisma.collection.findMany({
            take: 50, // A reasonable limit for the initial feed
@@ -791,7 +792,7 @@ server.get('/public/home', async (request, reply) => {
 
 
 // NEW: This now powers the categorized Explore page
-server.get('/public/explore', async (request, reply) => {
+server.get('/public/explore', async (request: FastifyRequest, reply: FastifyReply) => {
    try {
        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
        const mapCollection = (c: any) => ({
@@ -812,7 +813,7 @@ server.get('/public/explore', async (request, reply) => {
 });
 
 
-server.get('/public/collections/:username/:slug', async (request, reply) => {
+server.get('/public/collections/:username/:slug', async (request: FastifyRequest, reply: FastifyReply) => {
    const { username, slug } = request.params as { username?: string, slug?: string };
 
 
@@ -835,7 +836,7 @@ if (!username || !slug) {
 });
 
 
-server.get('/redirect', async (request, reply) => {
+server.get('/redirect', async (request: FastifyRequest, reply: FastifyReply) => {
    const { collectionId, productId, affiliateUrl } = request.query as any;
    const decodedUrl = decodeURIComponent(affiliateUrl);
 
