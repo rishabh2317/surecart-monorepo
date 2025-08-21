@@ -1,27 +1,74 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
 // src/server.ts
-const fastify_1 = __importDefault(require("fastify"));
-const cors_1 = __importDefault(require("@fastify/cors"));
-const client_1 = require("@prisma/client");
-const bcrypt_1 = __importDefault(require("bcrypt"));
-const generative_ai_1 = require("@google/generative-ai");
-const server = (0, fastify_1.default)({ logger: true });
-const prisma = new client_1.PrismaClient();
+import Fastify from 'fastify';
+import cors from '@fastify/cors';
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcrypt';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+// Initialize server with better logging
+const server = Fastify({
+    logger: {
+        level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+        transport: process.env.NODE_ENV === 'development' ? {
+            target: 'pino-pretty',
+            options: {
+                translateTime: 'HH:MM:ss Z',
+                ignore: 'pid,hostname',
+            }
+        } : undefined
+    }
+});
+const prisma = new PrismaClient();
 const SALT_ROUNDS = 10;
 // Add this at the top of your server.ts file, with other variables
 let aiApiCallCount = 0;
 const AI_API_CALL_LIMIT = 10; // Our own internal monthly limit
-server.register(cors_1.default, {
-    origin: '*', // In production, you would change this to your frontend's domain
-    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Explicitly allow the DELETE method
+// Enhanced CORS configuration
+server.register(cors, {
+    origin: (origin, cb) => {
+        if (!origin)
+            return cb(null, true);
+        const allowedOrigins = [
+            'https://surecart-monorepo.vercel.app',
+            'https://surecart-monorepo.vercel.app',
+            'http://localhost:3000',
+            'http://localhost:3001'
+        ];
+        if (process.env.NODE_ENV === 'development') {
+            return cb(null, true);
+        }
+        if (allowedOrigins.includes(origin)) {
+            return cb(null, true);
+        }
+        return cb(new Error('Not allowed by CORS'), false);
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    credentials: true
 });
-// --- NEW ANALYTICS ENDPOINT ---
-// Find and replace the existing /dashboard/:userId/analytics route
-// Find and replace the entire /dashboard/:userId/analytics route with this version
+// Add OPTIONS handler for preflight requests
+server.options('/*', async (request, reply) => {
+    reply.status(200).send();
+});
+// --- HEALTH CHECK ROUTE ---
+server.get('/health', async (request, reply) => {
+    try {
+        // Test database connection
+        await prisma.$queryRaw `SELECT 1`;
+        return {
+            status: 'ok',
+            database: 'connected',
+            timestamp: new Date().toISOString()
+        };
+    }
+    catch (error) {
+        server.log.error('Database health check failed:', error);
+        reply.status(500).send({
+            status: 'error',
+            database: 'disconnected',
+            timestamp: new Date().toISOString()
+        });
+    }
+});
 server.get('/dashboard/:userId/analytics', async (request, reply) => {
     const { userId } = request.params;
     try {
@@ -112,7 +159,7 @@ server.post('/register', async (request, reply) => {
     if (!email || !password || !username)
         return reply.code(400).send({ message: 'All fields are required.' });
     try {
-        const hashedPassword = await bcrypt_1.default.hash(password, SALT_ROUNDS);
+        const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
         const newUser = await prisma.user.create({ data: { email, username, authProviderId: hashedPassword, role } });
         const { authProviderId, ...userResponse } = newUser;
         reply.code(201).send(userResponse);
@@ -134,7 +181,7 @@ server.post('/login', async (request, reply) => {
         const user = await prisma.user.findUnique({ where: { email } });
         if (!user)
             return reply.code(401).send({ message: 'Invalid credentials.' });
-        const match = await bcrypt_1.default.compare(password, user.authProviderId);
+        const match = await bcrypt.compare(password, user.authProviderId);
         if (!match)
             return reply.code(401).send({ message: 'Invalid credentials.' });
         const { authProviderId, ...userResponse } = user;
@@ -200,7 +247,7 @@ server.post('/brands/register', async (request, reply) => {
         // In a real app, we would create a temporary "BrandApplication" model.
         // For the MVP, we can create a placeholder user and brand.
         const placeholderEmail = `brand-${Date.now()}@surecart-pending.dev`;
-        const hashedPassword = await bcrypt_1.default.hash(`temp_password_${Date.now()}`, 10);
+        const hashedPassword = await bcrypt.hash(`temp_password_${Date.now()}`, 10);
         const brandUser = await prisma.user.create({
             data: {
                 email: placeholderEmail,
@@ -404,7 +451,7 @@ server.post('/products/ask-ai', async (request, reply) => {
     if (!process.env.GEMINI_API_KEY) {
         return reply.code(500).send({ message: "AI service is not configured." });
     }
-    const genAI = new generative_ai_1.GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const prompt = `You are a helpful e-commerce assistant. Your goal is to provide a balanced and concise summary of public reviews for a product. Based on common knowledge and reviews for the product "${productName}", provide a summary with:
 - Three bullet points for "Pros" (what people love).
@@ -726,7 +773,7 @@ server.get('/public/collections/:username/:slug', async (request, reply) => {
         const publicCollection = {
             id: collection.id, name: collection.name, description: collection.description,
             author: collection.user.username, authorId: collection.user.id, authorAvatar: collection.user.profileImageUrl || `https://placehold.co/100x100/E2E8F0/475569?text=${collection.user.username.charAt(0).toUpperCase()}`,
-            products: collection.products.map(cp => ({ id: cp.product.id, name: cp.product.name, imageUrl: cp.product.imageUrls[0], brand: cp.product.brand?.name || "Brand", buyUrl: `http://${API_BASE_URL}/redirect?collectionId=${collection.id}&productId=${cp.product.id}&affiliateUrl=${encodeURIComponent(cp.product.baseUrl)}` }))
+            products: collection.products.map(cp => ({ id: cp.product.id, name: cp.product.name, imageUrl: cp.product.imageUrls[0], brand: cp.product.brand?.name || "Brand", buyUrl: `/redirect?collectionId=${collection.id}&productId=${cp.product.id}&affiliateUrl=${encodeURIComponent(cp.product.baseUrl)}` }))
         };
         reply.send(publicCollection);
     }
@@ -762,14 +809,62 @@ server.get('/redirect', async (request, reply) => {
         .header('Location', decodedUrl)
         .send();
 });
-// --- Start Server ---
+// --- ENHANCED SERVER START FUNCTION ---
 const start = async () => {
     try {
-        await server.listen({ port: 3001 });
+        const port = process.env.PORT || 3001;
+        const host = '0.0.0.0'; // Critical for Railway
+        server.log.info(`Starting server in ${process.env.NODE_ENV} mode`);
+        server.log.info(`Server will listen on ${host}:${port}`);
+        // Test database connection before starting server
+        try {
+            await prisma.$connect();
+            server.log.info('Database connected successfully');
+        }
+        catch (dbError) {
+            server.log.error('Database connection failed:', dbError);
+            throw new Error('Database connection failed');
+        }
+        await server.listen({ port: Number(port), host });
+        server.log.info(`✅ Server successfully started on ${host}:${port}`);
+        server.log.info(`🚀 Server is ready to accept connections`);
+        server.log.info(`🌐 CORS configured for: ${process.env.NODE_ENV === 'production'
+            ? 'https://surecart-monorepo.vercel.app'
+            : 'all origins (development)'}`);
     }
     catch (err) {
-        server.log.error(err);
+        server.log.error('❌ Server startup failed:', err);
+        // Graceful shutdown
+        await prisma.$disconnect();
         process.exit(1);
     }
 };
+// --- GRACEFUL SHUTDOWN HANDLING ---
+const gracefulShutdown = async (signal) => {
+    server.log.info(`Received ${signal}, shutting down gracefully...`);
+    try {
+        await server.close();
+        await prisma.$disconnect();
+        server.log.info('Server shut down successfully');
+        process.exit(0);
+    }
+    catch (error) {
+        server.log.error('Error during shutdown:', error);
+        process.exit(1);
+    }
+};
+// Handle different shutdown signals
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('unhandledRejection', (reason, promise) => {
+    server.log.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    process.exit(1);
+});
+process.on('uncaughtException', (error) => {
+    server.log.error('Uncaught Exception:', error);
+    process.exit(1);
+});
+// --- START THE SERVER ---
 start();
+// Export for testing purposes
+export { server };
