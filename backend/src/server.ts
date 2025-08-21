@@ -7,17 +7,24 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // --- Global Error Handling ---
 // It's crucial to have these handlers at the top to catch any errors during initialization.
-// They will safely shut down the process, which is the recommended practice.
-process.on('uncaughtException', (error) => {
+// They will safely shut down the process and provide detailed logs.
+process.on('uncaughtException', (error: Error) => { // Added type for better logging
   // Using console.error here is intentional, as the server logger might not be initialized.
   console.error('🚨 UNCAUGHT EXCEPTION! Shutting down...');
-  console.error(error);
+  console.error('Error Name:', error.name);
+  console.error('Error Message:', error.message);
+  console.error('Error Stack:', error.stack);
   process.exit(1);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('🚨 UNHANDLED REJECTION! Shutting down...');
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  if (reason instanceof Error) {
+    console.error('Reason Name:', reason.name);
+    console.error('Reason Message:', reason.message);
+    console.error('Reason Stack:', reason.stack);
+  }
   process.exit(1);
 });
 
@@ -35,6 +42,8 @@ const server = Fastify({
       } : undefined
     }
   });
+
+server.log.info('Fastify server instance created.');
   
   // Add Fastify error handler
   server.setErrorHandler((error, request, reply) => {
@@ -45,7 +54,18 @@ const server = Fastify({
       ...(process.env.NODE_ENV === 'development' && { details: error.message })
     });
   });
-const prisma = new PrismaClient();
+
+server.log.info('Fastify error handler set.');
+
+server.log.info('Initializing Prisma Client...');
+const prisma = new PrismaClient({
+  log:
+    process.env.NODE_ENV === 'production'
+      ? ['warn', 'error']
+      : ['query', 'info', 'warn', 'error'],
+});
+server.log.info('Prisma Client instantiated.');
+
 const SALT_ROUNDS = 10;
 // Add this at the top of your server.ts file, with other variables
 let aiApiCallCount = 0;
@@ -85,15 +105,17 @@ server.options('/*', async (request: FastifyRequest, reply: FastifyReply) => {
 // --- HEALTH CHECK ROUTE ---
 server.get('/health', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      server.log.info('Health check: testing database connection...');
       // Test database connection
       await prisma.$queryRaw`SELECT 1`;
+      server.log.info('Health check: database connection successful.');
       return { 
         status: 'ok', 
         database: 'connected',
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      server.log.error('Database health check failed:', error);
+      server.log.error({ err: error }, 'Database health check failed.');
       reply.status(500).send({ 
         status: 'error', 
         database: 'disconnected',
@@ -907,11 +929,13 @@ const start = async () => {
   
       // Test database connection before starting server
       try {
+        server.log.info('Attempting to connect to the database...');
         await prisma.$connect();
-        server.log.info('Database connected successfully');
+        server.log.info('✅ Database connected successfully.');
       } catch (dbError) {
-        server.log.error('Database connection failed:', dbError);
-        throw new Error('Database connection failed');
+        server.log.error({ err: dbError }, '❌ Database connection failed during startup.');
+        // Throwing the original error is more informative
+        throw dbError;
       }
   
       await server.listen({ port: Number(port), host });
