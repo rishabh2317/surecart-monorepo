@@ -28,10 +28,7 @@ server.register(cors, {
         if (!origin)
             return cb(null, true);
         const allowedOrigins = [
-            'https://surecart-monorepo.vercel.app',
-            'https://surecart-monorepo.vercel.app',
-            'http://localhost:3000',
-            'http://localhost:3001'
+            '*',
         ];
         if (process.env.NODE_ENV === 'development') {
             return cb(null, true);
