@@ -42,7 +42,7 @@ server.register(cors, {
 server.get("/", async () => {
     return { status: "ok" };
   });
-  
+
 server.get('/health', async (req, reply) => {
     return { status: 'ok' };
   });
@@ -1214,6 +1214,9 @@ const start = async () => {
       }
       const port = Number(process.env.PORT);
       const host = "0.0.0.0"; // Critical for Railway
+      console.log("🚀 NODE_ENV:", process.env.NODE_ENV);
+      console.log("🚀 PORT env:", process.env.PORT);
+      console.log(`🚀 Binding server on ${host}:${port}`);
   
       server.log.info(`Starting server in ${process.env.NODE_ENV} mode`);
       server.log.info(`Server will listen on ${host}:${port}`);
