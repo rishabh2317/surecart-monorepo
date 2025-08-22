@@ -38,6 +38,11 @@ server.register(cors, {
     credentials: true
 });
 // --- HEALTH CHECK ROUTE ---
+
+server.get("/", async () => {
+    return { status: "ok" };
+  });
+  
 server.get('/health', async (req, reply) => {
     return { status: 'ok' };
   });
