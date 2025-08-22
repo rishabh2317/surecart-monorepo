@@ -42,6 +42,15 @@ server.get('/health', async (req, reply) => {
     return { status: 'ok' };
   });
 
+server.get("/db-health", async (req, reply) => {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      return { status: "ok", db: "connected" };
+    } catch (err) {
+      return reply.code(500).send({ status: "error", db: "unreachable" });
+    }
+  });
+
 
 
 
@@ -1176,14 +1185,6 @@ server.get('/redirect', async (request, reply) => {
      // If logging fails, we still redirect the user so their experience isn't broken.
      server.log.error(err, "Failed to log click, but redirecting anyway.");
  }
-
-
-
-
-
-
-
-
  // Now that the click is saved, we can safely redirect.
  return reply
      .code(302)
@@ -1200,55 +1201,39 @@ server.get('/redirect', async (request, reply) => {
 
 // --- ENHANCED SERVER START FUNCTION ---
 const start = async () => {
-  try {
-    const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:3000';
-    if (!process.env.PORT) {
+    try {
+      const allowedOrigin = process.env.FRONTEND_URL || "http://localhost:3000";
+  
+      if (!process.env.PORT) {
         throw new Error("PORT is not defined. Railway requires binding to process.env.PORT");
       }
       const port = Number(process.env.PORT);
-    const host = '0.0.0.0'; // Critical for Railway
-     server.log.info(`Starting server in ${process.env.NODE_ENV} mode`);
-    server.log.info(`Server will listen on ${host}:${port}`);
-     // Test database connection before starting server
-    try {
-      await prisma.$connect();
-      server.log.info('Database connected successfully');
-    } catch (dbError) {
-      server.log.error('Database connection failed:', dbError);
-      throw new Error('Database connection failed');
-    }
-     await server.listen({ port: Number(port), host });
+      const host = "0.0.0.0"; // Critical for Railway
   
-    server.log.info(`✅ Server successfully started on ${host}:${port}`);
-    server.log.info(`🚀 Server is ready to accept connections`);
-    server.log.info(`🌐 CORS configured for: ${allowedOrigin}`);
-   } catch (err) {
-    server.log.error('❌ Server startup failed:', err);
-    // Graceful shutdown
-    await prisma.$disconnect();
-    process.exit(1);
-  }
-};
- // --- GRACEFUL SHUTDOWN HANDLING ---
-const gracefulShutdown = async (signal: string) => {
-  server.log.info(`Received ${signal}, shutting down gracefully...`);
-   try {
-    await server.close();
-    await prisma.$disconnect();
-    server.log.info('Server shut down successfully');
-    process.exit(0);
-  } catch (error) {
-    server.log.error('Error during shutdown:', error);
-    process.exit(1);
-  }
-};
- // Handle different shutdown signals
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('unhandledRejection', (reason, promise) => {
-  server.log.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  process.exit(1);
-});
+      server.log.info(`Starting server in ${process.env.NODE_ENV} mode`);
+      server.log.info(`Server will listen on ${host}:${port}`);
+  
+      // Try to connect to DB, but don't block server startup
+      prisma
+        .$connect()
+        .then(() => server.log.info("Database connected successfully"))
+        .catch((dbError) =>
+          server.log.error("Database connection failed (will retry on queries):", dbError)
+        );
+  
+      await server.listen({ port, host });
+  
+      server.log.info(`✅ Server successfully started on ${host}:${port}`);
+      server.log.info(`🚀 Server is ready to accept connections`);
+      server.log.info(`🌐 CORS configured for: ${allowedOrigin}`);
+    } catch (err) {
+      server.log.error("❌ Server startup failed:", err);
+      // Graceful shutdown
+      await prisma.$disconnect();
+      process.exit(1);
+    }
+  };
+  
 
  // --- START THE SERVER ---
 start();
