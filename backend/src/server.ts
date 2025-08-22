@@ -38,24 +38,9 @@ server.register(cors, {
     credentials: true
 });
 // --- HEALTH CHECK ROUTE ---
-server.get('/health', async (request: FastifyRequest, reply: FastifyReply) => {
-  try {
-    // Test database connection
-    await prisma.$queryRaw`SELECT 1`;
-    return {
-      status: 'ok',
-      database: 'connected',
-      timestamp: new Date().toISOString()
-    };
-  } catch (error) {
-    server.log.error('Database health check failed:', error);
-    reply.status(500).send({
-      status: 'error',
-      database: 'disconnected',
-      timestamp: new Date().toISOString()
-    });
-  }
-});
+server.get('/health', async (req, reply) => {
+    return { status: 'ok' };
+  });
 
 
 
@@ -1217,7 +1202,10 @@ server.get('/redirect', async (request, reply) => {
 const start = async () => {
   try {
     const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:3000';
-    const port = process.env.PORT || 3001;
+    if (!process.env.PORT) {
+        throw new Error("PORT is not defined. Railway requires binding to process.env.PORT");
+      }
+      const port = Number(process.env.PORT);
     const host = '0.0.0.0'; // Critical for Railway
      server.log.info(`Starting server in ${process.env.NODE_ENV} mode`);
     server.log.info(`Server will listen on ${host}:${port}`);
