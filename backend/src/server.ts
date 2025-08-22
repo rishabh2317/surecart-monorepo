@@ -48,11 +48,6 @@ const AI_API_CALL_LIMIT = 10; // Our own internal monthly limit
 
 
 
-
-
-
-
-
 // Enhanced CORS configuration
 server.register(cors, {
   origin: (origin, cb) => {
@@ -260,11 +255,6 @@ const mockProducts = [
 
 
 
-
-
-
-
-
 // --- AUTHENTICATION ROUTES ---
 server.post('/register', async (request, reply) => {
 const { email, password, username, role = 'CREATOR' } = request.body as any;
@@ -279,11 +269,6 @@ try {
  else { server.log.error(error); reply.code(500).send({ message: 'Server error.' }); }
 }
 });
-
-
-
-
-
 
 
 
@@ -351,19 +336,9 @@ server.post('/auth/social', async (request, reply) => {
 
 
 
-
-
-
-
-
 server.put('/users/:userId/upgrade-to-creator', async (request, reply) => {
  const { userId } = request.params as { userId: string };
  const { fullName, phone, instagramHandle, profileImageUrl } = request.body as any;
-
-
-
-
-
 
 
 
@@ -385,12 +360,6 @@ server.put('/users/:userId/upgrade-to-creator', async (request, reply) => {
      reply.code(500).send({ message: "Could not upgrade user to creator." });
  }
 });
-
-
-
-
-
-
 
 
 // POST /brands/register
@@ -454,12 +423,6 @@ server.post('/brands/register', async (request, reply) => {
 });
 
 
-
-
-
-
-
-
 // --- SHOPPER ENGAGEMENT ROUTES ---
 server.post('/collections/:collectionId/like', async (request, reply) => {
  const { collectionId } = request.params as { collectionId: string };
@@ -476,11 +439,6 @@ server.post('/collections/:collectionId/like', async (request, reply) => {
 
 
 
-
-
-
-
-
 server.delete('/collections/:collectionId/unlike', async (request, reply) => {
  const { collectionId } = request.params as { collectionId: string };
  const { userId } = request.body as { userId: string };
@@ -491,20 +449,7 @@ server.delete('/collections/:collectionId/unlike', async (request, reply) => {
  } catch (error) { server.log.error(error); reply.code(500).send({ message: "Could not unlike collection" }); }
 });
 
-
-
-
-
-
-
-
 // --- FOLLOW / UNFOLLOW ROUTES ---
-
-
-
-
-
-
 
 
 server.post('/users/:creatorId/follow', async (request, reply) => {
@@ -537,12 +482,6 @@ server.post('/users/:creatorId/follow', async (request, reply) => {
 });
 
 
-
-
-
-
-
-
 server.delete('/users/:creatorId/unfollow', async (request, reply) => {
  const { creatorId } = request.params as { creatorId: string };
  const { userId } = request.body as { userId: string };
@@ -572,12 +511,6 @@ server.delete('/users/:creatorId/unfollow', async (request, reply) => {
 });
 
 
-
-
-
-
-
-
 server.get('/users/:userId/follow-status/:creatorId', async (request, reply) => {
  const { userId, creatorId } = request.params as { userId: string, creatorId: string };
  try {
@@ -597,12 +530,6 @@ server.get('/users/:userId/follow-status/:creatorId', async (request, reply) => 
 });
 
 
-
-
-
-
-
-
 server.post('/collections/:collectionId/comments', async (request, reply) => {
  const { collectionId } = request.params as { collectionId: string };
  const { userId, text } = request.body as { userId: string, text: string };
@@ -615,13 +542,6 @@ server.post('/collections/:collectionId/comments', async (request, reply) => {
  } catch (error) { reply.code(500).send({ message: 'Error posting comment' }); }
 });
 
-
-
-
-
-
-
-
 server.get('/users/:userId/liked-status/:collectionId', async (request, reply) => {
  const { userId, collectionId } = request.params as { userId: string, collectionId: string };
  try {
@@ -629,12 +549,6 @@ server.get('/users/:userId/liked-status/:collectionId', async (request, reply) =
      reply.send({ isLiked: !!like });
  } catch (error) { server.log.error(error); reply.code(500).send({ message: "Error fetching like status" }); }
 });
-
-
-
-
-
-
 
 
 server.get('/users/:userId/likes', async (request, reply) => {
@@ -681,12 +595,6 @@ server.get('/collections/:collectionId/comments', async (request, reply) => {
      reply.code(500).send({ message: "Error fetching comments" });
  }
 });
-
-
-
-
-
-
 
 
 // POST /products/ask-ai
@@ -765,12 +673,6 @@ server.get('/dashboard/:userId', async (request, reply) => {
 });
 
 
-
-
-
-
-
-
 server.get('/collections/:id', async (request, reply) => {
  const { id } = request.params as { id: string };
  try {
@@ -786,12 +688,6 @@ server.get('/collections/:id', async (request, reply) => {
      reply.send(response);
  } catch (error) { server.log.error(error); reply.code(500).send({ message: "Error fetching collection details" }); }
 });
-
-
-
-
-
-
 
 
 server.post('/collections', async (request, reply) => {
@@ -847,12 +743,6 @@ server.post('/collections', async (request, reply) => {
      reply.code(500).send({ message: "Error creating collection" });
  }
 });
-
-
-
-
-
-
 
 
 server.delete('/collections/:id', async (request, reply) => {
@@ -1013,12 +903,6 @@ server.get('/users/:userId/rewards', async (request, reply) => {
 });
 
 
-
-
-
-
-
-
 // --- PUBLIC & UNIVERSAL ROUTES ---
 server.get('/products/search', async (request, reply) => {
  const { q, brandId } = request.query as { q?: string, brandId?: string };
@@ -1057,12 +941,6 @@ server.get('/products/search', async (request, reply) => {
 });
 
 
-
-
-
-
-
-
 // POST /public/collections/:collectionId/view
 server.post('/public/collections/:collectionId/view', async (request, reply) => {
  const { collectionId } = request.params as { collectionId: string };
@@ -1088,12 +966,6 @@ server.post('/public/collections/:collectionId/view', async (request, reply) => 
      reply.code(500).send({ message: "Error logging view" });
  }
 });
-
-
-
-
-
-
 
 
 // GET /brands
@@ -1132,12 +1004,6 @@ server.get('/public/home', async (request: FastifyRequest, reply: FastifyReply) 
 });
 
 
-
-
-
-
-
-
 // NEW: This now powers the categorized Explore page
 server.get('/public/explore', async (request: FastifyRequest, reply: FastifyReply) => {
  try {
@@ -1158,12 +1024,6 @@ server.get('/public/explore', async (request: FastifyRequest, reply: FastifyRepl
      reply.send({ new: newCollections, trending: trendingCollections });
  } catch (error) { server.log.error(error); reply.code(500).send({ message: "Error fetching explore data" }); }
 });
-
-
-
-
-
-
 
 
 server.get('/public/collections/:username/:slug', async (request, reply) => {
@@ -1193,12 +1053,6 @@ if (!username || !slug) {
      reply.send(publicCollection);
  } catch (error) { server.log.error(error); reply.code(500).send({ message: "Error fetching public collection" }); }
 });
-
-
-
-
-
-
 
 
 server.get('/redirect', async (request, reply) => {
@@ -1251,11 +1105,6 @@ server.get('/redirect', async (request, reply) => {
      .header('Location', decodedUrl)
      .send();
 });
-
-
-
-
-
 
 
 
