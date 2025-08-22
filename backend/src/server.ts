@@ -33,7 +33,7 @@ const AI_API_CALL_LIMIT = 10; // Our own internal monthly limit
 server.register(cors, { 
     // This explicitly tells your backend to trust your Vercel frontend.
     // It's more secure and reliable than a dynamic function in this case.
-    origin: 'https://surecart-monorepo.vercel.app', 
+    origin: '*', 
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true
 });
