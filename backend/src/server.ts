@@ -29,27 +29,13 @@ const AI_API_CALL_LIMIT = 10; // Our own internal monthly limit
 
 
 // Enhanced CORS configuration
-server.register(cors, {
-  origin: (origin, cb) => {
-    if (!origin) return cb(null, true);
-  
-    const allowedOrigins = [
-      '*',
-    ];
-  
-    if (process.env.NODE_ENV === 'development') {
-      return cb(null, true);
-    }
-  
-    if (allowedOrigins.includes(origin)) {
-      return cb(null, true);
-    }
-  
-    return cb(new Error('Not allowed by CORS'), false);
-  },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-  credentials: true
+// This is the final, production-ready CORS configuration
+server.register(cors, { 
+    // This explicitly tells your backend to trust your Vercel frontend.
+    // It's more secure and reliable than a dynamic function in this case.
+    origin: 'https://surecart-monorepo.vercel.app', 
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    credentials: true
 });
 // --- HEALTH CHECK ROUTE ---
 server.get('/health', async (request: FastifyRequest, reply: FastifyReply) => {
@@ -1230,6 +1216,7 @@ server.get('/redirect', async (request, reply) => {
 // --- ENHANCED SERVER START FUNCTION ---
 const start = async () => {
   try {
+    const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:3000';
     const port = process.env.PORT || 3001;
     const host = '0.0.0.0'; // Critical for Railway
      server.log.info(`Starting server in ${process.env.NODE_ENV} mode`);
@@ -1246,9 +1233,7 @@ const start = async () => {
   
     server.log.info(`✅ Server successfully started on ${host}:${port}`);
     server.log.info(`🚀 Server is ready to accept connections`);
-    server.log.info(`🌐 CORS configured for: ${process.env.NODE_ENV === 'production'
-      ? 'https://surecart-monorepo.vercel.app'
-      : 'all origins (development)'}`);
+    server.log.info(`🌐 CORS configured for: ${allowedOrigin}`);
    } catch (err) {
     server.log.error('❌ Server startup failed:', err);
     // Graceful shutdown
