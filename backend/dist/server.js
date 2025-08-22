@@ -1,21 +1,49 @@
-import bcrypt from 'bcrypt';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+// src/server.ts
+import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { PrismaClient } from '@prisma/client';
-import Fastify from 'fastify';
-const server = Fastify({ logger: true });
+import bcrypt from 'bcrypt';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+// Initialize server with better logging
+const server = Fastify({
+    logger: {
+        level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+        transport: process.env.NODE_ENV === 'development' ? {
+            target: 'pino-pretty',
+            options: {
+                translateTime: 'HH:MM:ss Z',
+                ignore: 'pid,hostname',
+            }
+        } : undefined
+    }
+});
 const prisma = new PrismaClient();
 const SALT_ROUNDS = 10;
+// Add this at the top of your server.ts file, with other variables
 let aiApiCallCount = 0;
 const AI_API_CALL_LIMIT = 10; // Our own internal monthly limit
-// World-Class Plugin Registration
+// Enhanced CORS configuration
 server.register(cors, {
-    origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-});
-// Add OPTIONS handler for preflight requests
-server.options('/*', async (request, reply) => {
-    reply.status(200).send();
+    origin: (origin, cb) => {
+        if (!origin)
+            return cb(null, true);
+        const allowedOrigins = [
+            'https://surecart-monorepo.vercel.app',
+            'https://surecart-monorepo.vercel.app',
+            'http://localhost:3000',
+            'http://localhost:3001'
+        ];
+        if (process.env.NODE_ENV === 'development') {
+            return cb(null, true);
+        }
+        if (allowedOrigins.includes(origin)) {
+            return cb(null, true);
+        }
+        return cb(new Error('Not allowed by CORS'), false);
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    credentials: true
 });
 // --- HEALTH CHECK ROUTE ---
 server.get('/health', async (request, reply) => {
@@ -37,7 +65,6 @@ server.get('/health', async (request, reply) => {
         });
     }
 });
-// --- PRODUCT SEARCH ROUTE ---
 server.get('/dashboard/:userId/analytics', async (request, reply) => {
     const { userId } = request.params;
     try {
@@ -413,12 +440,15 @@ server.get('/collections/:collectionId/comments', async (request, reply) => {
 // POST /products/ask-ai
 server.post('/products/ask-ai', async (request, reply) => {
     const { productName } = request.body;
+    if (!process.env.GEMINI_API_KEY) {
+        server.log.error('GEMINI_API_KEY is not configured.');
+        return reply.code(500).send({ message: "AI service is not configured." });
+    }
     if (aiApiCallCount >= AI_API_CALL_LIMIT) {
         return reply.code(429).send({ message: "This feature is temporarily unavailable due to high demand. Please try again later." });
     }
     // This is a critical check for production
     if (!process.env.GEMINI_API_KEY) {
-        server.log.error('GEMINI_API_KEY is not configured.');
         return reply.code(500).send({ message: "AI service is not configured." });
     }
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -765,7 +795,7 @@ server.get('/redirect', async (request, reply) => {
                 collectionId,
                 productId,
                 userAgent: request.headers['user-agent'] || '',
-                ipAddress: request.ip, // Fastify will get the correct IP with trustProxy: true
+                ipAddress: request.headers['x-forwarded-for'] || request.ip,
             }
         });
     }
@@ -779,19 +809,58 @@ server.get('/redirect', async (request, reply) => {
         .header('Location', decodedUrl)
         .send();
 });
-// --- World-Class Server Start Function ---
+// --- ENHANCED SERVER START FUNCTION ---
 const start = async () => {
     try {
-        await prisma.$connect();
-        server.log.info('Database connected successfully');
         const port = process.env.PORT || 3001;
-        await server.listen({ port: Number(port), host: '0.0.0.0' });
-        server.log.info(`🚀 Server is ready and listening at ${port}`);
+        const host = '0.0.0.0'; // Critical for Railway
+        server.log.info(`Starting server in ${process.env.NODE_ENV} mode`);
+        server.log.info(`Server will listen on ${host}:${port}`);
+        // Test database connection before starting server
+        try {
+            await prisma.$connect();
+            server.log.info('Database connected successfully');
+        }
+        catch (dbError) {
+            server.log.error('Database connection failed:', dbError);
+            throw new Error('Database connection failed');
+        }
+        await server.listen({ port: Number(port), host });
+        server.log.info(`✅ Server successfully started on ${host}:${port}`);
+        server.log.info(`🚀 Server is ready to accept connections`);
+        server.log.info(`🌐 CORS configured for: ${process.env.NODE_ENV === 'production'
+            ? 'https://surecart-monorepo.vercel.app'
+            : 'all origins (development)'}`);
     }
     catch (err) {
         server.log.error('❌ Server startup failed:', err);
+        // Graceful shutdown
         await prisma.$disconnect();
         process.exit(1);
     }
 };
+// --- GRACEFUL SHUTDOWN HANDLING ---
+const gracefulShutdown = async (signal) => {
+    server.log.info(`Received ${signal}, shutting down gracefully...`);
+    try {
+        await server.close();
+        await prisma.$disconnect();
+        server.log.info('Server shut down successfully');
+        process.exit(0);
+    }
+    catch (error) {
+        server.log.error('Error during shutdown:', error);
+        process.exit(1);
+    }
+};
+// Handle different shutdown signals
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('unhandledRejection', (reason, promise) => {
+    server.log.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    process.exit(1);
+});
+// --- START THE SERVER ---
 start();
+// Export for testing purposes
+export { server };
