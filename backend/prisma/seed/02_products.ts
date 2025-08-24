@@ -1,26 +1,31 @@
-const { PrismaClient } = require("@prisma/client");
-const fs = require("fs");
-const path = require("path");
+import { PrismaClient } from "@prisma/client";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+// __dirname polyfill for ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Starting seeding process...');
+  console.log("🌱 Starting seeding process...");
 
   // 0. Load JSON file
-  const rawData = fs.readFileSync(path.join(__dirname, 'data.json'), 'utf-8');
-  const products = JSON.parse(rawData);
+  const rawData = fs.readFileSync(path.join(__dirname, "data.json"), "utf-8");
+  const products: any[] = JSON.parse(rawData);
 
   // 1. Ensure default user exists
   const defaultUser = await prisma.user.upsert({
-    where: { email: 'default@system.com' },
+    where: { email: "default@system.com" },
     update: {},
     create: {
-      authProviderId: 'system',
-      username: 'default_user',
-      email: 'default@system.com',
-      role: 'ADMIN',
-      fullName: 'System Default User',
+      authProviderId: "system",
+      username: "default_user",
+      email: "default@system.com",
+      role: "ADMIN",
+      fullName: "System Default User",
     },
   });
   console.log(`👤 Using default user: ${defaultUser.id}`);
@@ -29,10 +34,10 @@ async function main() {
   for (const p of products) {
     // --- BRAND ---
     const brand = await prisma.brand.upsert({
-      where: { name: p.brandName || 'Unknown Brand' },
+      where: { name: p.brandName || "Unknown Brand" },
       update: {},
       create: {
-        name: p.brandName || 'Unknown Brand',
+        name: p.brandName || "Unknown Brand",
         websiteUrl: p.baseUrl ? new URL(p.baseUrl).origin : null,
         userId: defaultUser.id, // ✅ Required field
       },
@@ -49,24 +54,26 @@ async function main() {
         name: p.name,
         description:
           p.description ||
-          `High-quality ${p.name} from ${p.brandName || 'Unknown Brand'}.`,
+          `High-quality ${p.name} from ${p.brandName || "Unknown Brand"}.`,
         imageUrls: p.imageUrls || [],
         baseUrl: p.baseUrl,
         brandId: brand.id,
         price: p.price ? Number(p.price) : null,
-        currency: p.currency || 'INR',
+        currency: p.currency || "INR",
       },
     });
 
     console.log(`✅ Seeded product: ${p.name}`);
   }
 
-  console.log(`🎯 Seeding complete. Total products processed: ${products.length}`);
+  console.log(
+    `🎯 Seeding complete. Total products processed: ${products.length}`
+  );
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Error during seeding:', e);
+    console.error("❌ Error during seeding:", e);
     process.exit(1);
   })
   .finally(async () => {

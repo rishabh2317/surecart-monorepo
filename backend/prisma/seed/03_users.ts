@@ -1,12 +1,12 @@
-const { PrismaClient } = require("@prisma/client");
-const bcrypt = require("bcryptjs");
-
+import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log("🌱 Seeding users...");
 
+  // --- Creators ---
   for (let i = 1; i <= 3; i++) {
     await prisma.user.upsert({
       where: { email: `creator${i}@surecart.dev` },
@@ -20,6 +20,7 @@ async function main() {
     });
   }
 
+  // --- Regular Users ---
   for (let i = 1; i <= 5; i++) {
     await prisma.user.upsert({
       where: { email: `user${i}@mail.com` },
@@ -33,9 +34,14 @@ async function main() {
     });
   }
 
-  console.log(`✅ Seeded creators + users (safe re-run)`);
+  console.log("✅ Seeded creators + users (safe re-run)");
 }
 
 main()
-  .catch(console.error)
-  .finally(() => prisma.$disconnect());
+  .catch((e) => {
+    console.error("❌ Error during seeding:", e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

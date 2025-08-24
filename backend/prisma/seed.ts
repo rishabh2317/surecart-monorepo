@@ -1,5 +1,4 @@
-const { execSync } = require("child_process");
-
+import { execSync } from "child_process";
 
 async function runSeed(file: string) {
   console.log(`\n🚀 Running ${file}...`);
@@ -15,4 +14,7 @@ async function main() {
   console.log("\n✅ All seeding scripts completed!");
 }
 
-main();
+main().catch((err) => {
+  console.error("❌ Seeding failed:", err);
+  process.exit(1);
+});
