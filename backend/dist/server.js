@@ -4,6 +4,8 @@ import cors from '@fastify/cors';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import dotenv from 'dotenv';
+dotenv.config();
 // Initialize server with better logging
 const server = Fastify({
     logger: {
