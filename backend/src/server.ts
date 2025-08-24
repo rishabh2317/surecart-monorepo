@@ -37,12 +37,23 @@ const AI_API_CALL_LIMIT = 10; // Our own internal monthly limit
 
 // Enhanced CORS configuration
 server.register(cors, {
-    origin: true, // Reflects request origin (allows all)
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-    credentials: true
-  });
-  
+ origin: (origin, cb) => {
+   if (!origin) return cb(null, true);
+    const allowedOrigins = [
+     '*',
+   ];
+    if (process.env.NODE_ENV === 'development') {
+     return cb(null, true);
+   }
+    if (allowedOrigins.includes(origin)) {
+     return cb(null, true);
+   }
+    return cb(new Error('Not allowed by CORS'), false);
+ },
+ methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+ allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+ credentials: true
+});
 // --- HEALTH CHECK ROUTE ---
 server.get('/health', async (request: FastifyRequest, reply: FastifyReply) => {
  try {
