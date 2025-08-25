@@ -5,7 +5,9 @@ import { useQuery } from '@tanstack/react-query';
 import { useParams, notFound } from 'next/navigation';
 import { getCreatorProfile } from '@/lib/api';
 import Link from 'next/link';
-import { UserPlus } from 'lucide-react';
+import { UserPlus, Heart } from 'lucide-react';
+import { useAuth } from '@/lib/auth-context';
+import { useState, useEffect } from 'react';
 
 // --- Sub-Components for a clean structure ---
 const CollectionCard = ({ collection }: { collection: any }) => (
@@ -28,6 +30,8 @@ const CollectionCard = ({ collection }: { collection: any }) => (
 // --- MAIN PAGE ---
 export default function CreatorProfilePage() {
     const params = useParams();
+    const { user, openAuthModal } = useAuth();
+    const [isFollowing, setIsFollowing] = useState(false);
     const username = params.username as string;
 
     const { data: creator, isLoading, isError } = useQuery({
@@ -35,6 +39,16 @@ export default function CreatorProfilePage() {
         queryFn: () => getCreatorProfile(username),
         enabled: !!username,
     });
+
+    // Note: The follow/unfollow logic would be added here
+    const handleFollow = () => {
+        if (!user) {
+            openAuthModal();
+        } else {
+            // Placeholder for follow/unfollow mutation
+            setIsFollowing(!isFollowing);
+        }
+    };
 
     if (isLoading) {
         return (
@@ -82,9 +96,9 @@ export default function CreatorProfilePage() {
                         </div>
 
                         <div className="mt-6">
-                            <button className="flex items-center justify-center mx-auto space-x-2 px-6 py-3 bg-teal-500 text-white font-semibold rounded-full hover:bg-teal-600">
+                            <button onClick={handleFollow} className={`flex items-center justify-center mx-auto space-x-2 px-6 py-3 font-semibold rounded-full transition-colors ${isFollowing ? 'bg-slate-200 text-slate-800' : 'bg-teal-500 text-white hover:bg-teal-600'}`}>
                                 <UserPlus className="w-5 h-5" />
-                                <span>Follow</span>
+                                <span>{isFollowing ? 'Following' : 'Follow'}</span>
                             </button>
                         </div>
                     </div>

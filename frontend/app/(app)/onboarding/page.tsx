@@ -24,6 +24,7 @@ export default function OnboardingPage() {
         phone: (e.currentTarget.elements.namedItem('phone') as HTMLInputElement).value,
         instagramHandle: (e.currentTarget.elements.namedItem('instagram') as HTMLInputElement).value,
         profileImageUrl: profilePicture,
+        bio: (e.currentTarget.elements.namedItem('bio') as HTMLTextAreaElement).value, // <-- ADD THIS LINE
     };
 
     try {
@@ -96,6 +97,12 @@ export default function OnboardingPage() {
           <div><label htmlFor="name" className="text-sm font-medium text-slate-700">Full Name</label><div className="relative mt-1"><div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><User className="w-5 h-5 text-slate-500" /></div><input type="text" name="name" required className="block w-full pl-10 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-lg placeholder-slate-600" placeholder="Rishabh Singh" /></div></div>
           <div><label htmlFor="phone" className="text-sm font-medium text-slate-700">Phone Number (Private)</label><div className="relative mt-1"><div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Phone className="w-5 h-5 text-slate-500" /></div><input type="tel" name="phone" required className="block w-full pl-10 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-lg placeholder-slate-600" placeholder="+91 98765 43210" /></div></div>
           <div><label htmlFor="instagram" className="text-sm font-medium text-slate-700">Instagram Handle</label><div className="relative mt-1"><div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Instagram className="w-5 h-5 text-slate-500" /></div><input type="text" name="instagram" required className="block w-full pl-10 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-lg placeholder-slate-600" placeholder="rishu_creates" /></div></div>
+          <div>
+    <label htmlFor="bio" className="text-sm font-medium text-slate-700">Your Bio</label>
+    <div className="relative mt-1">
+        <textarea name="bio" rows={3} className="block w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg placeholder-slate-600" placeholder="Tell your audience a little about yourself..."></textarea>
+    </div>
+</div>
           <button type="submit" className="w-full flex justify-center py-3 px-4 rounded-lg shadow-sm text-sm font-medium text-white bg-teal-500 hover:bg-teal-600">
             Go to Dashboard
           </button>

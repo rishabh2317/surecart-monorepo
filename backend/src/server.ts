@@ -370,22 +370,7 @@ try {
 
 server.put('/users/:userId/upgrade-to-creator', async (request, reply) => {
 const { userId } = request.params as { userId: string };
-const { fullName, phone, instagramHandle, profileImageUrl } = request.body as any;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+const { fullName, phone, instagramHandle, profileImageUrl, bio } = request.body as any;
 
 try {
     const updatedUser = await prisma.user.update({
@@ -393,6 +378,7 @@ try {
         data: {
             role: 'CREATOR',
             fullName,
+            bio,
             phone,
             instagramHandle,
             profileImageUrl,
