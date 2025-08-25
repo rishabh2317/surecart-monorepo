@@ -5,6 +5,7 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
+import multipart from '@fastify/multipart';
 dotenv.config();
 
 
@@ -37,24 +38,13 @@ const AI_API_CALL_LIMIT = 10; // Our own internal monthly limit
 
 
 // Enhanced CORS configuration
-server.register(cors, {
- origin: (origin, cb) => {
-   if (!origin) return cb(null, true);
-    const allowedOrigins = [
-     '*',
-   ];
-    if (process.env.NODE_ENV === 'development') {
-     return cb(null, true);
-   }
-    if (allowedOrigins.includes(origin)) {
-     return cb(null, true);
-   }
-    return cb(new Error('Not allowed by CORS'), false);
- },
- methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
- allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
- credentials: true
+// World-Class Plugin Registration
+server.register(cors, { 
+    origin: process.env.FRONTEND_URL || '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 });
+server.register(multipart);
+
 // --- HEALTH CHECK ROUTE ---
 server.get('/health', async (request: FastifyRequest, reply: FastifyReply) => {
  try {
