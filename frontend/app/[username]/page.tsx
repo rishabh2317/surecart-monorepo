@@ -112,7 +112,7 @@ export default function CreatorProfilePage() {
                                 {creator.collections.map((col: any) => <CollectionCard key={col.id} collection={col} />)}
                             </div>
                         ) : (
-                            <p className="text-center text-slate-600">This creator hasn't published any collections yet.</p>
+                            <p className="text-center text-slate-600">This creator has not published any collections yet.</p>
                         )}
                     </div>
                 </section>
