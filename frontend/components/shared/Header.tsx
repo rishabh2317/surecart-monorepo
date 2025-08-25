@@ -1,6 +1,7 @@
 // components/shared/Header.tsx
 'use client';
-
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { Search } from 'lucide-react';
@@ -8,6 +9,14 @@ import ProfileDropdown from './ProfileDropdown'; // We will create this next
 
 export default function Header() {
     const { user, loading } = useAuth();
+    const router = useRouter();
+    const [searchQuery, setSearchQuery] = useState('');
+    const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        if (searchQuery.trim()) {
+            router.push(`/search?q=${searchQuery.trim()}`);
+        }
+    };
 
     return (
         <header className="sticky top-0 z-40 bg-white border-b border-slate-200">
@@ -23,10 +32,17 @@ export default function Header() {
 
                 {/* Search Bar fills the remaining space */}
                 <div className="flex-1 px-4">
-                    <div className="relative max-w-xl mx-auto">
-                        <input type="search" placeholder="Search" className="w-full pl-10 pr-4 py-2 border-none bg-slate-100 rounded-full" />
+                    {/* THIS IS THE FIX: The search bar is now a functional form */}
+                    <form onSubmit={handleSearch} className="relative max-w-xl mx-auto">
+                        <input 
+                            type="search" 
+                            placeholder="Search" 
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 border-none bg-slate-100 rounded-full focus:ring-2 focus:ring-teal-500" 
+                        />
                         <Search className="w-5 h-5 text-slate-500 absolute top-1/2 left-4 -translate-y-1/2" />
-                    </div>
+                    </form>
                 </div>
 
                 {/* Profile sits on the right */}

@@ -72,3 +72,10 @@ export const searchProducts = (query: string, brandId: string | null) => {
 export const getBrands = async () => {
     return fetcher('/brands');
 };
+
+// Add this new function to the end of lib/api.ts
+
+export const universalSearch = (query: string) => {
+    // We use encodeURIComponent to safely handle special characters in the search query
+    return fetcher(`/search?q=${encodeURIComponent(query)}`);
+};
