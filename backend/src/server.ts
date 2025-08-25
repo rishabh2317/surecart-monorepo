@@ -39,18 +39,25 @@ const AI_API_CALL_LIMIT = 10; // Our own internal monthly limit
 
 // Enhanced CORS configuration
 // World-Class Plugin Registration
-const allowedOrigins = (process.env.FRONTEND_URLS || '').split(',');
-
-server.register(cors, {
-  origin: (origin, cb) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      cb(null, true);
-    } else {
-      cb(new Error("Not allowed by CORS"), false);
-    }
-  },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-});
+const allowedOrigins = [
+    'http://localhost:3000',
+    'https://surecart-monorepo.vercel.app', // your deployed frontend
+  ];
+  
+  server.register(cors, {
+    origin: (origin, cb) => {
+      // allow requests with no origin (like mobile apps or curl)
+      if (!origin) return cb(null, true);
+  
+      if (allowedOrigins.includes(origin)) {
+        cb(null, true);
+      } else {
+        cb(new Error("Not allowed by CORS"), false);
+      }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    credentials: true, // add if FE sends cookies/auth headers
+  });
 
 
 // --- HEALTH CHECK ROUTE ---
