@@ -39,11 +39,19 @@ const AI_API_CALL_LIMIT = 10; // Our own internal monthly limit
 
 // Enhanced CORS configuration
 // World-Class Plugin Registration
-server.register(cors, { 
-    origin: process.env.FRONTEND_URL || '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+const allowedOrigins = (process.env.FRONTEND_URLS || '').split(',');
+
+server.register(cors, {
+  origin: (origin, cb) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Not allowed by CORS"), false);
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 });
-server.register(multipart);
+
 
 // --- HEALTH CHECK ROUTE ---
 server.get('/health', async (request: FastifyRequest, reply: FastifyReply) => {
@@ -1702,7 +1710,7 @@ return reply
 const start = async () => {
  try {
    const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:3000';
-   const port = process.env.PORT || 3001;
+   const port = process.env.PORT || 8080;
    const host = '0.0.0.0'; // Critical for Railway
     server.log.info(`Starting server in ${process.env.NODE_ENV} mode`);
    server.log.info(`Server will listen on ${host}:${port}`);
