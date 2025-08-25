@@ -25,24 +25,34 @@ const SALT_ROUNDS = 10;
 let aiApiCallCount = 0;
 const AI_API_CALL_LIMIT = 10; // Our own internal monthly limit
 // Enhanced CORS configuration
+// World-Class Plugin Registration
+const allowedOrigins = [
+    'http://localhost:3000',
+    'https://surecart-monorepo.vercel.app', // your deployed frontend
+];
+// register cors normally but DO NOT register extra server.options('*')
 server.register(cors, {
     origin: (origin, cb) => {
         if (!origin)
             return cb(null, true);
-        const allowedOrigins = [
-            '*',
-        ];
-        if (process.env.NODE_ENV === 'development') {
+        if (allowedOrigins.includes(origin))
             return cb(null, true);
-        }
-        if (allowedOrigins.includes(origin)) {
-            return cb(null, true);
-        }
-        return cb(new Error('Not allowed by CORS'), false);
+        cb(null, false);
     },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true
+});
+// globally intercept OPTIONS before routing
+server.addHook('onRequest', async (request, reply) => {
+    if (request.method === 'OPTIONS') {
+        reply
+            .header('Access-Control-Allow-Origin', request.headers.origin || '*')
+            .header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            .header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+            .status(204)
+            .send();
+        // return here — Fastify will not continue routing after send()
+    }
 });
 // --- HEALTH CHECK ROUTE ---
 server.get('/health', async (request, reply) => {
@@ -62,6 +72,85 @@ server.get('/health', async (request, reply) => {
             database: 'disconnected',
             timestamp: new Date().toISOString()
         });
+    }
+});
+// GET /search?q=...
+// server.ts (or routes/search.ts) — Fastify route
+// Make sure `prisma` is your PrismaClient instance.
+server.get('/search', async (request, reply) => {
+    const q = String(request.query.q || '').trim();
+    const limit = Math.min(50, Number(request.query.limit || 10));
+    const page = Math.max(1, Number(request.query.page || 1));
+    const offset = (page - 1) * limit;
+    const suggest = String(request.query.suggest || '0') === '1';
+    if (!q) {
+        return reply.code(400).send({ message: 'Search query is required.' });
+    }
+    try {
+        // Use full-text search for queries length >= 3
+        if (q.length >= 3) {
+            const creators = await prisma.$queryRaw `
+          SELECT u.id, u.username, u.profileImageUrl,
+            ts_rank_cd(to_tsvector('english', COALESCE(u.username, '')), plainto_tsquery('english', ${q})) as rank
+          FROM "User" u
+          WHERE to_tsvector('english', COALESCE(u.username, '')) @@ plainto_tsquery('english', ${q})
+          ORDER BY rank DESC NULLS LAST
+          LIMIT ${limit} OFFSET ${offset}
+        `;
+            const collections = await prisma.$queryRaw `
+          SELECT c.id, c.name, c.slug, c."coverImageUrl", u.username as "ownerUsername",
+            ts_rank_cd(to_tsvector('english', COALESCE(c.name, '')), plainto_tsquery('english', ${q})) as rank
+          FROM "Collection" c
+          JOIN "User" u ON u.id = c."userId"
+          WHERE to_tsvector('english', COALESCE(c.name, '')) @@ plainto_tsquery('english', ${q})
+          ORDER BY rank DESC NULLS LAST
+          LIMIT ${limit} OFFSET ${offset}
+        `;
+            const products = await prisma.$queryRaw `
+          SELECT p.id, p.name, p.description, p."imageUrls", b.name as "brandName",
+            ts_rank_cd(to_tsvector('english', COALESCE(p.name, '') || ' ' || COALESCE(p.description, '')), plainto_tsquery('english', ${q})) as rank
+          FROM "Product" p
+          LEFT JOIN "Brand" b ON b.id = p."brandId"
+          WHERE to_tsvector('english', COALESCE(p.name, '') || ' ' || COALESCE(p.description, '')) @@ plainto_tsquery('english', ${q})
+          ORDER BY rank DESC NULLS LAST
+          LIMIT ${limit} OFFSET ${offset}
+        `;
+            return reply.send({ creators, collections, products, page, limit });
+        }
+        else {
+            // Fuzzy fallback for short queries or partial matches (uses trigram / ILIKE)
+            const creators = await prisma.$queryRaw `
+          SELECT u.id, u.username, u.profileImageUrl,
+            similarity(u.username, ${q}) AS sim
+          FROM "User" u
+          WHERE u.username ILIKE ${'%' + q + '%'} OR similarity(u.username, ${q}) > 0.15
+          ORDER BY sim DESC NULLS LAST
+          LIMIT ${limit} OFFSET ${offset}
+        `;
+            const collections = await prisma.$queryRaw `
+          SELECT c.id, c.name, c.slug, c."coverImageUrl", u.username as "ownerUsername",
+            GREATEST(similarity(c.name, ${q}), 0) as sim
+          FROM "Collection" c
+          JOIN "User" u ON u.id = c."userId"
+          WHERE c.name ILIKE ${'%' + q + '%'} OR similarity(c.name, ${q}) > 0.15
+          ORDER BY sim DESC NULLS LAST
+          LIMIT ${limit} OFFSET ${offset}
+        `;
+            const products = await prisma.$queryRaw `
+          SELECT p.id, p.name, p.description, p."imageUrls", b.name as "brandName",
+            GREATEST(similarity(p.name, ${q}), 0) as sim
+          FROM "Product" p
+          LEFT JOIN "Brand" b ON b.id = p."brandId"
+          WHERE p.name ILIKE ${'%' + q + '%'} OR similarity(p.name, ${q}) > 0.15
+          ORDER BY sim DESC NULLS LAST
+          LIMIT ${limit} OFFSET ${offset}
+        `;
+            return reply.send({ creators, collections, products, page, limit });
+        }
+    }
+    catch (err) {
+        server.log.error('Search error:', err);
+        return reply.code(500).send({ message: 'Error performing search' });
     }
 });
 server.get('/dashboard/:userId/analytics', async (request, reply) => {
@@ -812,7 +901,7 @@ server.get('/redirect', async (request, reply) => {
 const start = async () => {
     try {
         const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:3000';
-        const port = process.env.PORT || 3001;
+        const port = process.env.PORT || 8080;
         const host = '0.0.0.0'; // Critical for Railway
         server.log.info(`Starting server in ${process.env.NODE_ENV} mode`);
         server.log.info(`Server will listen on ${host}:${port}`);
