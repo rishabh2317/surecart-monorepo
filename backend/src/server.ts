@@ -9,8 +9,6 @@ import multipart from '@fastify/multipart';
 dotenv.config();
 
 
-
-
 // Initialize server with better logging
 const server = Fastify({
  logger: {
@@ -29,14 +27,6 @@ const SALT_ROUNDS = 10;
 // Add this at the top of your server.ts file, with other variables
 let aiApiCallCount = 0;
 const AI_API_CALL_LIMIT = 10; // Our own internal monthly limit
-
-
-
-
-
-
-
-
 // Enhanced CORS configuration
 // World-Class Plugin Registration
 const allowedOrigins = [
@@ -45,18 +35,18 @@ const allowedOrigins = [
   ];
   
   server.register(cors, {
-    origin: (origin, cb) => {
-      // allow requests with no origin (like mobile apps or curl)
-      if (!origin) return cb(null, true);
-  
-      if (allowedOrigins.includes(origin)) {
-        cb(null, true);
-      } else {
-        cb(new Error("Not allowed by CORS"), false);
-      }
-    },
+    origin: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true, // add if FE sends cookies/auth headers
+  });
+
+  server.options('*', (req, reply) => {
+    reply
+      .header('Access-Control-Allow-Origin', req.headers.origin || allowedOrigins[0])
+      .header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+      .header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+      .status(204)
+      .send();
   });
 
 
@@ -83,10 +73,6 @@ server.get('/health', async (request: FastifyRequest, reply: FastifyReply) => {
 
 
 
-
-
-
-
 server.get('/dashboard/:userId/analytics', async (request, reply) => {
 const { userId } = request.params as { userId: string };
 try {
@@ -99,21 +85,6 @@ try {
         _count: { id: true },
         orderBy: { createdAt: 'asc' }
     });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     const collections = await prisma.collection.findMany({
         where: { userId },
@@ -128,36 +99,10 @@ try {
     });
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     const creator = await prisma.user.findUnique({
         where: { id: userId },
         include: { _count: { select: { followers: true } } }
     });
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -177,18 +122,6 @@ try {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     clicksByDayRaw.forEach(row => {
         const key = new Date(row.createdAt).toISOString().split('T')[0];
         if (dateMap.has(key)) dateMap.get(key)!.Clicks += row._count._all;
@@ -199,40 +132,10 @@ try {
     });
      dateMap.forEach(value => value.Engagements = value.Clicks + value.Likes);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     const performanceOverTime = Array.from(dateMap.entries()).map(([date, metrics]) => ({
         date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         ...metrics
     }));
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     // --- 4. Calculate Summary and Top Collections ---
     const totalClicks = collections.reduce((sum, col) => sum + col._count.clicks, 0);
@@ -241,21 +144,6 @@ try {
         id: c.id, name: c.name, clicks: c._count.clicks, likes: c._count.likedBy,
         shares: Math.floor(c._count.clicks / 10 + c._count.likedBy * 2),
     })).sort((a, b) => b.clicks - a.clicks).slice(0, 5);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     // --- 5. Send Final Payload ---
     reply.send({
@@ -267,20 +155,6 @@ try {
         performanceOverTime: performanceOverTime,
         topCollections: topCollections,
     });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 } catch (error) {
