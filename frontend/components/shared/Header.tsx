@@ -76,7 +76,7 @@ export default function Header() {
                             <input 
                                 type="search" 
                                 placeholder="Search" 
-                                className="w-full pl-10 pr-4 py-2 border-none bg-slate-100 rounded-full focus:ring-2 focus:ring-teal-500" 
+                                className="w-full pl-10 pr-10 py-2 border-none bg-slate-100 rounded-full focus:ring-2 focus:ring-teal-500" 
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 onFocus={() => setIsFocused(true)}

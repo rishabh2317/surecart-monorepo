@@ -1,7 +1,7 @@
 // app/search/page.tsx
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
@@ -35,73 +35,58 @@ const CollectionResultCard = ({ collection }: { collection: any }) => (
     </div>
 );
 
+// THIS IS THE NEW, MISSING COMPONENT
+const ProductCard = ({ product }: { product: any }) => (
+    <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow">
+        <Link href={`/products/${product.id}`}>
+            <div className="aspect-square w-full bg-slate-100 rounded-t-xl overflow-hidden">
+                <img src={product.imageUrls[0]} alt={product.name} className="w-full h-full object-cover" />
+            </div>
+            <div className="p-4">
+                <p className="font-semibold text-slate-800 truncate">{product.name}</p>
+                <p className="text-sm text-slate-500">{product.brand?.name || 'Brand'}</p>
+            </div>
+        </Link>
+    </div>
+);
+
 
 // --- MAIN SEARCH COMPONENT ---
 
 function SearchResults() {
     const searchParams = useSearchParams();
     const query = searchParams.get('q') || '';
+    const [activeTab, setActiveTab] = useState('Collections');
 
-    const { data: results, isLoading, isError } = useQuery({
+    const { data: results, isLoading } = useQuery({
         queryKey: ['universalSearch', query],
         queryFn: () => universalSearch(query),
         enabled: !!query,
     });
 
-    if (isLoading) {
-        return (
-            <div className="flex items-center justify-center h-[50vh]">
-                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-teal-500"></div>
-            </div>
-        );
-    }
+    if (isLoading) return <div className="text-center p-12">Searching...</div>;
 
-    if (isError) return <div className="text-center text-red-500 p-12">Failed to load search results.</div>;
-
-    const hasResults = results?.creators?.length > 0 || results?.collections?.length > 0 || results?.products?.length > 0;
+    const { creators = [], collections = [], products = [] } = results || {};
 
     return (
         <div className="container mx-auto p-4 sm:p-8">
-            <h1 className="text-3xl font-bold text-slate-900 mb-8">
-                Results for <span className="text-teal-600">{query}</span>
-            </h1>
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">Results for <span className="text-teal-600">"{query}"</span></h1>
+            
+            <div className="border-b border-slate-200 mb-6">
+                <nav className="-mb-px flex space-x-6">
+                    <button onClick={() => setActiveTab('Collections')} className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'Collections' ? 'border-teal-500 text-teal-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>Collections</button>
+                    <button onClick={() => setActiveTab('Creators')} className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'Creators' ? 'border-teal-500 text-teal-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>Creators</button>
+                    <button onClick={() => setActiveTab('Products')} className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'Products' ? 'border-teal-500 text-teal-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>Products</button>
+                </nav>
+            </div>
 
-            {!hasResults && (
-                <p className="text-slate-600 text-center py-12">No results found for your search.</p>
-            )}
-
-            {/* Creators Section */}
-            {results?.creators?.length > 0 && (
-                <section className="mb-12">
-                    <h2 className="text-2xl font-bold text-slate-800 mb-4">Creators</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-                        {results.creators.map((creator: any) => (
-                           <CreatorResultCard key={creator.id} creator={creator} />
-                        ))}
-                    </div>
-                </section>
-            )}
-
-            {/* Collections Section */}
-            {results?.collections?.length > 0 && (
-                <section>
-                    <h2 className="text-2xl font-bold text-slate-800 mb-4">Collections</h2>
-                    <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-4">
-                        {results.collections.map((collection: any) => (
-                            <CollectionResultCard key={collection.id} collection={collection} />
-                        ))}
-                    </div>
-                </section>
-            )}
+            {activeTab === 'Collections' && <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-4">{collections.map((c: any) => <CollectionResultCard key={c.id} collection={c} />)}</div>}
+            {activeTab === 'Creators' && <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">{creators.map((c: any) => <CreatorResultCard key={c.id} creator={c} />)}</div>}
+            {activeTab === 'Products' && <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">{products.map((p: any) => <ProductCard key={p.id} product={p} />)}</div>}
         </div>
     );
 }
 
-// This wrapper is required by Next.js to use useSearchParams
 export default function SearchPage() {
-    return (
-        <Suspense fallback={<div>Loading...</div>}>
-            <SearchResults />
-        </Suspense>
-    );
+    return (<Suspense fallback={<div>Loading...</div>}><SearchResults /></Suspense>);
 }
