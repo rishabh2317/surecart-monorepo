@@ -29,6 +29,8 @@ model User {
   transactions    Transaction[]
   likes           UserLikes[]
   bio             String?
+  passwordResetToken   String?      @unique
+  passwordResetExpires DateTime?
 }
 
 model Brand {

@@ -5,7 +5,7 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
-import multipart from '@fastify/multipart';
+import crypto from 'crypto';
 dotenv.config();
 
 
@@ -257,20 +257,6 @@ else { server.log.error(error); reply.code(500).send({ message: 'Server error.' 
 });
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 server.post('/login', async (request, reply) => {
 const { email, password } = request.body as any;
 if (!email || !password) return reply.code(400).send({ message: 'Email and password are required.' });
@@ -287,39 +273,9 @@ try {
 server.post('/auth/social', async (request, reply) => {
 const { email, username, authProviderId, profileImageUrl } = request.body as any;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 if (!email || !authProviderId || !username) {
     return reply.code(400).send({ message: "Email, username, and authProviderId are required." });
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 try {
     const user = await prisma.user.upsert({
@@ -334,21 +290,6 @@ try {
         },
     });
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     const { authProviderId: _, ...userResponse } = user;
     reply.send(userResponse);
 } catch (error) {
@@ -356,19 +297,6 @@ try {
     reply.code(500).send({ message: 'An internal server error occurred.' });
 }
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -398,37 +326,9 @@ try {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 // POST /brands/register
 server.post('/brands/register', async (request, reply) => {
 const { brandName, category, presence, website, email, name } = request.body as any;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 try {
     // In a real app, we would create a temporary "BrandApplication" model.
@@ -445,21 +345,6 @@ try {
         }
     });
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     await prisma.brand.create({
         data: {
             name: brandName,
@@ -470,27 +355,75 @@ try {
     });
      // In a real app, you would trigger a confirmation email here.
     // e.g., await sendBrandConfirmationEmail({ brandName, email, name });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     reply.code(201).send({ message: 'Brand application submitted successfully.' });
 } catch (error) {
     server.log.error(error);
     reply.code(500).send({ message: 'An error occurred while submitting the application.' });
 }
+});
+
+// POST /auth/forgot-password
+server.post('/auth/forgot-password', async (request, reply) => {
+    const { email } = request.body as { email: string };
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    if (user) {
+        // Generate a secure, random token
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+        const passwordResetExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minute expiry
+
+        await prisma.user.update({
+            where: { email },
+            data: { passwordResetToken, passwordResetExpires },
+        });
+
+        // --- THIS IS THE WORLD-CLASS "SIMULATED EMAIL" ---
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
+
+        // Instead of sending an email, we log the link to the console for the developer.
+        server.log.info(`
+        =====================================================
+        PASSWORD RESET LINK (for developer testing):
+        ${resetUrl}
+        =====================================================
+        `);
+    }
+    
+    // We always send the same success message to prevent email enumeration attacks.
+    reply.send({ message: 'If a user with that email exists, a password reset link has been sent.' });
+});
+
+// POST /auth/reset-password
+server.post('/auth/reset-password', async (request, reply) => {
+    const { token, password } = request.body as { token: string, password: string };
+
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    const user = await prisma.user.findFirst({
+        where: {
+            passwordResetToken: hashedToken,
+            passwordResetExpires: { gt: new Date() },
+        }
+    });
+
+    if (!user) {
+        return reply.code(400).send({ message: 'Token is invalid or has expired.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+
+    await prisma.user.update({
+        where: { id: user.id },
+        data: {
+            authProviderId: hashedPassword,
+            passwordResetToken: null,
+            passwordResetExpires: null,
+        }
+    });
+    
+    reply.send({ message: 'Password has been successfully reset.' });
 });
 
 
@@ -1494,13 +1427,15 @@ try {
         orderBy: { createdAt: 'desc' },
         include: {
             user: { select: { username: true, profileImageUrl: true } },
-            products: { take: 1, orderBy: { displayOrder: 'asc' }, include: { product: { select: { imageUrls: true } } } }
+            products: { take: 1, orderBy: { displayOrder: 'asc' }, include: { product: { select: { imageUrls: true } } } },
+            _count: { select: { views: true } }
         }
     });
     const response = collections.map(c => ({
         id: c.id, name: c.name, slug: c.slug, author: c.user.username,
+        views: c._count.views,
         authorAvatar: c.user.profileImageUrl || `https://placehold.co/100x100/E2E8F0/475569?text=${c.user.username.charAt(0).toUpperCase()}`,
-        coverImage: c.coverImageUrl || c.products[0]?.product.imageUrls[0] || `https://placehold.co/400x300/cccccc/333333?text=${encodeURIComponent(c.name)}`
+        coverImage: c.coverImageUrl || c.products[0]?.product.imageUrls[0] || `https://placehold.co/400x300/cccccc/333333?text=${encodeURIComponent(c.name)}`,
     }));
     reply.send(response);
 } catch (error) {
