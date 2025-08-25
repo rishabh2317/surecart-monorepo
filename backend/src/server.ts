@@ -83,88 +83,45 @@ server.get('/health', async (request: FastifyRequest, reply: FastifyReply) => {
 // server.ts (or routes/search.ts) — Fastify route
 // Make sure `prisma` is your PrismaClient instance.
 
+// GET /search?q=...
 server.get('/search', async (request: any, reply: any) => {
-    const q = String(request.query.q || '').trim();
-    const limit = Math.min(50, Number(request.query.limit || 10));
-    const page = Math.max(1, Number(request.query.page || 1));
-    const offset = (page - 1) * limit;
-    const suggest = String(request.query.suggest || '0') === '1';
-  
+    const { q } = request.query as { q?: string };
+
     if (!q) {
-      return reply.code(400).send({ message: 'Search query is required.' });
+        return reply.code(400).send({ message: "Search query is required." });
     }
-  
+
     try {
-      // Use full-text search for queries length >= 3
-      if (q.length >= 3) {
-        const creators = await prisma.$queryRaw`
-          SELECT u.id, u.username, u.profileImageUrl,
-            ts_rank_cd(to_tsvector('english', COALESCE(u.username, '')), plainto_tsquery('english', ${q})) as rank
-          FROM "User" u
-          WHERE to_tsvector('english', COALESCE(u.username, '')) @@ plainto_tsquery('english', ${q})
-          ORDER BY rank DESC NULLS LAST
-          LIMIT ${limit} OFFSET ${offset}
-        `;
-  
-        const collections = await prisma.$queryRaw`
-          SELECT c.id, c.name, c.slug, c."coverImageUrl", u.username as "ownerUsername",
-            ts_rank_cd(to_tsvector('english', COALESCE(c.name, '')), plainto_tsquery('english', ${q})) as rank
-          FROM "Collection" c
-          JOIN "User" u ON u.id = c."userId"
-          WHERE to_tsvector('english', COALESCE(c.name, '')) @@ plainto_tsquery('english', ${q})
-          ORDER BY rank DESC NULLS LAST
-          LIMIT ${limit} OFFSET ${offset}
-        `;
-  
-        const products = await prisma.$queryRaw`
-          SELECT p.id, p.name, p.description, p."imageUrls", b.name as "brandName",
-            ts_rank_cd(to_tsvector('english', COALESCE(p.name, '') || ' ' || COALESCE(p.description, '')), plainto_tsquery('english', ${q})) as rank
-          FROM "Product" p
-          LEFT JOIN "Brand" b ON b.id = p."brandId"
-          WHERE to_tsvector('english', COALESCE(p.name, '') || ' ' || COALESCE(p.description, '')) @@ plainto_tsquery('english', ${q})
-          ORDER BY rank DESC NULLS LAST
-          LIMIT ${limit} OFFSET ${offset}
-        `;
-  
-        return reply.send({ creators, collections, products, page, limit });
-      } else {
-        // Fuzzy fallback for short queries or partial matches (uses trigram / ILIKE)
-        const creators = await prisma.$queryRaw`
-          SELECT u.id, u.username, u.profileImageUrl,
-            similarity(u.username, ${q}) AS sim
-          FROM "User" u
-          WHERE u.username ILIKE ${'%' + q + '%'} OR similarity(u.username, ${q}) > 0.15
-          ORDER BY sim DESC NULLS LAST
-          LIMIT ${limit} OFFSET ${offset}
-        `;
-  
-        const collections = await prisma.$queryRaw`
-          SELECT c.id, c.name, c.slug, c."coverImageUrl", u.username as "ownerUsername",
-            GREATEST(similarity(c.name, ${q}), 0) as sim
-          FROM "Collection" c
-          JOIN "User" u ON u.id = c."userId"
-          WHERE c.name ILIKE ${'%' + q + '%'} OR similarity(c.name, ${q}) > 0.15
-          ORDER BY sim DESC NULLS LAST
-          LIMIT ${limit} OFFSET ${offset}
-        `;
-  
-        const products = await prisma.$queryRaw`
-          SELECT p.id, p.name, p.description, p."imageUrls", b.name as "brandName",
-            GREATEST(similarity(p.name, ${q}), 0) as sim
-          FROM "Product" p
-          LEFT JOIN "Brand" b ON b.id = p."brandId"
-          WHERE p.name ILIKE ${'%' + q + '%'} OR similarity(p.name, ${q}) > 0.15
-          ORDER BY sim DESC NULLS LAST
-          LIMIT ${limit} OFFSET ${offset}
-        `;
-  
-        return reply.send({ creators, collections, products, page, limit });
-      }
-    } catch (err) {
-      server.log.error('Search error:', err);
-      return reply.code(500).send({ message: 'Error performing search' });
+        const [creators, collections, products] = await prisma.$transaction([
+            // Search for Creators
+            prisma.user.findMany({
+                where: { 
+                    role: 'CREATOR',
+                    username: { contains: q, mode: 'insensitive' } 
+                },
+                take: 5,
+                select: { id: true, username: true, profileImageUrl: true }
+            }),
+            // Search for Collections
+            prisma.collection.findMany({
+                where: { name: { contains: q, mode: 'insensitive' } },
+                take: 10,
+                include: { user: { select: { username: true } } }
+            }),
+            // Search for Products
+            prisma.product.findMany({
+                where: { name: { contains: q, mode: 'insensitive' } },
+                take: 10,
+                include: { brand: { select: { name: true } } }
+            })
+        ]);
+        
+        reply.send({ creators, collections, products });
+    } catch (error) {
+        server.log.error(error);
+        reply.code(500).send({ message: "Error performing search" });
     }
-  });
+});
   
 
 server.get('/dashboard/:userId/analytics', async (request, reply) => {
