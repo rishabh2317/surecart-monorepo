@@ -79,6 +79,46 @@ server.get('/health', async (request: FastifyRequest, reply: FastifyReply) => {
  }
 });
 
+// GET /search?q=...
+server.get('/search', async (request: any, reply: any) => {
+    const { q } = request.query as { q?: string };
+
+    if (!q) {
+        return reply.code(400).send({ message: "Search query is required." });
+    }
+
+    try {
+        const [creators, collections, products] = await prisma.$transaction([
+            // Search for Creators
+            prisma.user.findMany({
+                where: { 
+                    role: 'CREATOR',
+                    username: { contains: q, mode: 'insensitive' } 
+                },
+                take: 5,
+                select: { id: true, username: true, profileImageUrl: true }
+            }),
+            // Search for Collections
+            prisma.collection.findMany({
+                where: { name: { contains: q, mode: 'insensitive' } },
+                take: 10,
+                include: { user: { select: { username: true } } }
+            }),
+            // Search for Products
+            prisma.product.findMany({
+                where: { name: { contains: q, mode: 'insensitive' } },
+                take: 10,
+                include: { brand: { select: { name: true } } }
+            })
+        ]);
+        
+        reply.send({ creators, collections, products });
+    } catch (error) {
+        server.log.error(error);
+        reply.code(500).send({ message: "Error performing search" });
+    }
+});
+
 
 
 

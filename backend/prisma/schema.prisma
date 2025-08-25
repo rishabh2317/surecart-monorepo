@@ -56,6 +56,7 @@ model Product {
   clicks          Click[]
   collections     CollectionProduct[]
   brand           Brand?              @relation(fields: [brandId], references: [id])
+  @@index([name, description])
 }
 
 model Collection {
@@ -72,6 +73,7 @@ model Collection {
   views         CollectionView[]
   comments      Comment[]
   likedBy       UserLikes[]
+  @@index([name, description])
 }
 
 model CollectionProduct {
