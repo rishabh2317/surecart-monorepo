@@ -34,24 +34,28 @@ const allowedOrigins = [
     'https://surecart-monorepo.vercel.app', // your deployed frontend
   ];
   
-  server.register(cors, {
+  // register cors normally but DO NOT register extra server.options('*')
+server.register(cors, {
     origin: (origin, cb) => {
-      if (!origin) return cb(null, true); // allow curl/mobile
-      if (allowedOrigins.includes(origin)) cb(null, true);
-      else cb(new Error("Not allowed by CORS"), false);
+      if (!origin) return cb(null, true);
+      if (allowedOrigins.includes(origin)) return cb(null, true);
+      cb(null, false);
     },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    credentials: true,
-    preflight: false   // 👈 IMPORTANT: disable cors plugin's OPTIONS route
+    methods: ['GET','POST','PUT','DELETE','OPTIONS'],
+    credentials: true
   });
-
-  server.options('*', (req, reply) => {
-    reply
-      .header('Access-Control-Allow-Origin', req.headers.origin || allowedOrigins[0])
-      .header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-      .header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-      .status(204)
-      .send();
+  
+  // globally intercept OPTIONS before routing
+  server.addHook('onRequest', async (request, reply) => {
+    if (request.method === 'OPTIONS') {
+      reply
+        .header('Access-Control-Allow-Origin', request.headers.origin || '*')
+        .header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        .header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        .status(204)
+        .send();
+      // return here — Fastify will not continue routing after send()
+    }
   });
 
 
