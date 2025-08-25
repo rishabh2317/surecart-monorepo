@@ -35,9 +35,14 @@ const allowedOrigins = [
   ];
   
   server.register(cors, {
-    origin: true,
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true); // allow curl/mobile
+      if (allowedOrigins.includes(origin)) cb(null, true);
+      else cb(new Error("Not allowed by CORS"), false);
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    credentials: true, // add if FE sends cookies/auth headers
+    credentials: true,
+    preflight: false   // 👈 IMPORTANT: disable cors plugin's OPTIONS route
   });
 
   server.options('*', (req, reply) => {
