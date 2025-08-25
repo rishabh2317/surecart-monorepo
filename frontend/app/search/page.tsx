@@ -79,7 +79,7 @@ function SearchResults() {
 
     return (
         <div className="container mx-auto p-4 sm:p-8">
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">Results for <span className="text-teal-600">"{query}"</span></h1>
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">Results for <span className="text-teal-600">{query}</span></h1>
             
             {hasResults ? (
                 <>

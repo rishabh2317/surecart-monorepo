@@ -20,7 +20,7 @@ export default function ForgotPasswordPage() {
                 <div className="bg-white rounded-2xl shadow-lg p-8 space-y-6">
                     <div className="text-center">
                         <h2 className="text-2xl font-bold text-slate-800">Reset your password</h2>
-                        <p className="mt-2 text-slate-600">Enter your email and we'll send you a link to get back into your account.</p>
+                        <p className="mt-2 text-slate-600">Enter your email and we will send you a link to get back into your account.</p>
                     </div>
                     {message ? (
                         <p className="text-center p-4 bg-green-50 text-green-700 rounded-lg">{message}</p>
