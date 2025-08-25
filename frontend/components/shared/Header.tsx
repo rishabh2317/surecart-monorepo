@@ -81,7 +81,7 @@ export default function Header() {
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 onFocus={() => setIsFocused(true)}
                             />
-                            <button type="submit" className="absolute top-1/2 left-4 -translate-y-1/2">
+                            <button type="submit" className="absolute top-1/2 right-4 -translate-y-1/2">
                                 <Search className="w-5 h-5 text-slate-500" />
                             </button>
                         </form>
@@ -93,13 +93,13 @@ export default function Header() {
                                 {!isSearching && results && (
                                     <div className="p-2">
                                         {results.creators?.length > 0 && <h3 className="px-3 py-1 text-xs font-semibold text-slate-500 uppercase">Creators</h3>}
-                                        {results.creators?.map((c: any) => <Link key={c.id} href={`/${c.username}`} className="flex items-center p-3 hover:bg-slate-100 rounded-lg"><User className="w-4 h-4 mr-3 text-slate-500"/>{c.username}</Link>)}
+                                        {results.creators?.map((c: any) => <Link key={c.id} href={`/${c.username}`} className="flex items-center p-3 text-slate-700 hover:bg-slate-100 rounded-lg"><User className="w-4 h-4 mr-3 text-slate-500"/>{c.username}</Link>)}
 
                                         {results.collections?.length > 0 && <h3 className="px-3 py-1 mt-2 text-xs font-semibold text-slate-500 uppercase">Collections</h3>}
-                                        {results.collections?.map((c: any) => <Link key={c.id} href={`/${c.user.username}/${c.slug}`} className="flex items-center p-3 hover:bg-slate-100 rounded-lg"><Layers className="w-4 h-4 mr-3 text-slate-500"/>{c.name}</Link>)}
+                                        {results.collections?.map((c: any) => <Link key={c.id} href={`/${c.user.username}/${c.slug}`} className="flex items-center p-3 text-slate-700 hover:bg-slate-100 rounded-lg"><Layers className="w-4 h-4 mr-3 text-slate-500"/>{c.name}</Link>)}
 
                                         {results.products?.length > 0 && <h3 className="px-3 py-1 mt-2 text-xs font-semibold text-slate-500 uppercase">Products</h3>}
-                                        {results.products?.map((p: any) => <Link key={p.id} href="#" className="flex items-center p-3 hover:bg-slate-100 rounded-lg"><Package className="w-4 h-4 mr-3 text-slate-500"/>{p.name}</Link>)}
+                                        {results.products?.map((p: any) => <Link key={p.id} href={`/search?q=${encodeURIComponent(p.name)}`} className="flex items-center p-3 text-slate-700 hover:bg-slate-100 rounded-lg"><Package className="w-4 h-4 mr-3 text-slate-600"/>{p.name}</Link>)}
                                     </div>
                                 )}
                             </div>
