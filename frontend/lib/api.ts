@@ -79,3 +79,7 @@ export const universalSearch = (query: string) => {
     // We use encodeURIComponent to safely handle special characters in the search query
     return fetcher(`/search?q=${encodeURIComponent(query)}`);
 };
+
+export const getCreatorProfile = (username: string) => {
+    return fetcher(`/public/creators/${username}`);
+};

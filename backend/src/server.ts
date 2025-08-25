@@ -762,12 +762,49 @@ try {
 
 
 
+// GET /public/creators/:username
+server.get('/public/creators/:username', async (request: any, reply: any) => {
+    const { username } = request.params as { username: string };
+    try {
+        const creator = await prisma.user.findUnique({
+            where: { username },
+            // THIS IS THE FIX: We use 'include' to fetch all related data
+            include: {
+                _count: { select: { followers: true } },
+                collections: {
+                    orderBy: { createdAt: 'desc' },
+                    include: {
+                        user: { select: { username: true } },
+                        products: { take: 1, orderBy: { displayOrder: 'asc' }, include: { product: true } }
+                    }
+                }
+            }
+        });
 
+        if (!creator || creator.role !== 'CREATOR') {
+            return reply.code(404).send({ message: "Creator not found" });
+        }
+        
+        // The rest of the function can now safely access creator.collections and creator.bio
+        const response = {
+            id: creator.id,
+            username: creator.username,
+            fullName: creator.fullName,
+            profileImageUrl: creator.profileImageUrl,
+            bio: creator.bio, // This now works
+            _count: creator._count,
+            collections: creator.collections.map((c: any) => ({ // This now works
+                id: c.id, name: c.name, slug: c.slug, author: c.user.username,
+                coverImage: c.coverImageUrl || c.products[0]?.product.imageUrls[0] || `https://placehold.co/400x300/cccccc/333333?text=${encodeURIComponent(c.name)}`
+            }))
+        };
 
-
-
-
-
+        reply.send(response);
+    } catch (error) {
+        server.log.error(error);
+        reply.code(500).send({ message: "Error fetching creator profile" });
+    }
+});
 
 
 

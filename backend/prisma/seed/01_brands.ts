@@ -12,7 +12,7 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Seeding brands...");
 
-  const filePath = path.join(__dirname, "../data.json");
+  const filePath = path.join(__dirname, "/data.json");
   const raw: any[] = JSON.parse(fs.readFileSync(filePath, "utf-8"));
 
   const uniqueBrandNames = Array.from(
