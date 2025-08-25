@@ -92,7 +92,7 @@ server.get('/search', async (request: any, reply: any) => {
     }
 
     try {
-        const [creators, collections, products] = await prisma.$transaction([
+        const [creators, collections, products, brands] = await prisma.$transaction([
             // Search for Creators
             prisma.user.findMany({
                 where: { 
@@ -113,10 +113,14 @@ server.get('/search', async (request: any, reply: any) => {
                 where: { name: { contains: q, mode: 'insensitive' } },
                 take: 10,
                 include: { brand: { select: { name: true } } }
+            }),
+            prisma.brand.findMany({
+                where: { name: { contains: q, mode: 'insensitive' } },
+                take: 5
             })
         ]);
         
-        reply.send({ creators, collections, products });
+        reply.send({ creators, collections, products, brands });
     } catch (error) {
         server.log.error(error);
         reply.code(500).send({ message: "Error performing search" });
@@ -490,7 +494,43 @@ try {
 });
 
 
+// GET /products/:productId
+server.get('/products/:productId', async (request: any, reply: any) => {
+    const { productId } = request.params as { productId: string };
+    try {
+        const product = await prisma.product.findUnique({
+            where: { id: productId },
+            include: { brand: true }
+        });
 
+        if (!product) {
+            return reply.code(404).send({ message: "Product not found" });
+        }
+
+        // Now, find all collections that include this product
+        const collectionsContainingProduct = await prisma.collection.findMany({
+            where: { products: { some: { productId: productId } } },
+            include: {
+                user: { select: { username: true, profileImageUrl: true } },
+                products: { take: 1, orderBy: { displayOrder: 'asc' }, include: { product: true } }
+            }
+        });
+
+        const response = {
+            product,
+            collections: collectionsContainingProduct.map((c: any) => ({
+                id: c.id, name: c.name, slug: c.slug, author: c.user.username,
+                authorAvatar: c.user.profileImageUrl || `https://placehold.co/100x100/E2E8F0/475569?text=${c.user.username.charAt(0).toUpperCase()}`,
+                coverImage: c.coverImageUrl || c.products[0]?.product.imageUrls[0] || `https://placehold.co/400x300/cccccc/333333?text=${encodeURIComponent(c.name)}`
+            }))
+        };
+
+        reply.send(response);
+    } catch (error) {
+        server.log.error(error);
+        reply.code(500).send({ message: "Error fetching product details" });
+    }
+});
 
 
 

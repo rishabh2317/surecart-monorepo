@@ -83,3 +83,7 @@ export const universalSearch = (query: string) => {
 export const getCreatorProfile = (username: string) => {
     return fetcher(`/public/creators/${username}`);
 };
+
+export const getProductDetails = (productId: string) => {
+    return fetcher(`/products/${productId}`);
+};
