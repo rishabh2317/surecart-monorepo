@@ -113,7 +113,7 @@ const CreatorDashboard = ({ user }: { user: any }) => {
   };
 
   const handleShare = (collection: any) => {
-    const link = `http://localhost:3000/${collection.username}/${collection.slug}`;
+    const link = `${window.location.origin}/${collection.username}/${collection.slug}`;
     navigator.clipboard.writeText(link);
     setCopiedLink(collection.id);
     setTimeout(() => setCopiedLink(null), 2000);

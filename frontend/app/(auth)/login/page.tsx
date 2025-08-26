@@ -76,7 +76,7 @@ function LoginComponent() {
             <form className="space-y-4" onSubmit={handleAuth}>
                 {isSignUp && (<div><label className="text-sm font-medium text-slate-700">Username</label><input type="text" value={username} onChange={e => setUsername(e.target.value)} required className="mt-1 block w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg" /></div>)}
                 <div><label className="text-sm font-medium text-slate-700">Email</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} required className="mt-1 block w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg" /></div>
-                <div><label className="text-sm font-medium text-slate-700">Password</label>
+                <div>
                 <div>
     <div className="flex justify-between items-center">
         <label className="text-sm font-medium text-slate-700">Password</label>

@@ -114,6 +114,20 @@ server.get('/search', async (request: any, reply: any) => {
                 take: 10,
                 include: { brand: { select: { name: true } } }
             }),
+            prisma.product.findMany({
+                where: { 
+                    OR: [
+                        { name: { contains: q, mode: 'insensitive' } },
+                        { brand: { name: { contains: q, mode: 'insensitive' } } }
+                    ]
+                },
+                take: 20,
+                include: { 
+                    brand: { select: { name: true } },
+                    // This is the key: we count the collections for each product
+                    _count: { select: { collections: true } } 
+                }
+            }),
             prisma.brand.findMany({
                 where: { name: { contains: q, mode: 'insensitive' } },
                 take: 5
@@ -1499,20 +1513,6 @@ server.get('/public/collections/:username/:slug', async (request, reply) => {
 const { username, slug } = request.params as { username?: string, slug?: string };
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 if (!username || !slug) {
 return reply.code(400).send({ message: "Username and slug are required." });
 }
@@ -1523,66 +1523,37 @@ try {
     });
     if (!collection) return reply.code(404).send({ message: "Collection not found" });
     const publicCollection = {
-        id: collection.id, name: collection.name, description: collection.description,
-        author: collection.user.username, authorId: collection.user.id, authorAvatar: collection.user.profileImageUrl || `https://placehold.co/100x100/E2E8F0/475569?text=${collection.user.username.charAt(0).toUpperCase()}`,
-        products: collection.products.map(cp => ({ id: cp.product.id, name: cp.product.name, imageUrl: cp.product.imageUrls[0], brand: cp.product.brand?.name || "Brand", buyUrl: `/redirect?collectionId=${collection.id}&productId=${cp.product.id}&affiliateUrl=${encodeURIComponent(cp.product.baseUrl)}` }))
+        id: collection.id,
+        name: collection.name,
+        description: collection.description,
+        author: collection.user.username,
+        authorAvatar: collection.user.profileImageUrl || `https://placehold.co/100x100/E2E8F0/475569?text=${collection.user.username.charAt(0).toUpperCase()}`,
+        products: collection.products.map((cp: any) => {
+            // THIS IS THE NEW LOGIC BLOCK YOU ASKED FOR
+            const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001';
+            const affiliateUrlWithTag = cp.product.baseUrl + `?tag=surecart-21`; // Placeholder affiliate tag
+            const buyUrl = `${backendUrl}/redirect?collectionId=${collection.id}&productId=${cp.product.id}&affiliateUrl=${encodeURIComponent(affiliateUrlWithTag)}`;
+
+            return { 
+                id: cp.product.id, 
+                name: cp.product.name, 
+                imageUrl: cp.product.imageUrls[0], 
+                brand: cp.product.brand?.name || "Brand", 
+                buyUrl: buyUrl // Use the correctly constructed URL
+            };
+        })
     };
     reply.send(publicCollection);
 } catch (error) { server.log.error(error); reply.code(500).send({ message: "Error fetching public collection" }); }
 });
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 server.get('/redirect', async (request, reply) => {
 const { collectionId, productId, affiliateUrl } = request.query as any;
 const decodedUrl = decodeURIComponent(affiliateUrl);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 if (!collectionId || !productId || !decodedUrl) {
     return reply.code(400).send({ message: "Missing tracking parameters." });
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 try {
     // THIS IS THE FIX: We now 'await' the database call.
@@ -1598,41 +1569,12 @@ try {
     // If logging fails, we still redirect the user so their experience isn't broken.
     server.log.error(err, "Failed to log click, but redirecting anyway.");
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // Now that the click is saved, we can safely redirect.
 return reply
     .code(302)
     .header('Location', decodedUrl)
     .send();
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
