@@ -74,8 +74,8 @@ export default function Header() {
 
             <header className="sticky top-0 z-40 bg-white border-b border-slate-200">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex items-center h-16 gap-4">
-                    <Link href="/" className="flex-shrink-0">
-                        <img src="/logo8.png" alt="surecart logo" className="h-12 w-auto" />
+                <Link href="/" className="flex-shrink-0">
+                        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Stash</h1>
                     </Link>
                     
                     {/* Search Component */}
