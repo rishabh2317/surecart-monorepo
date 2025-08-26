@@ -112,7 +112,7 @@ const ProductCard = ({ product }: { product: any }) => {
                     </button>
                     
                     <a 
-                        href={product.buyUrl}
+                        href={product.baseUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="w-full mt-2 flex items-center justify-center px-4 py-3 font-semibold text-white bg-slate-800 rounded-lg hover:bg-slate-900"
