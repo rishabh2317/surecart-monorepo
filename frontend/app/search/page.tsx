@@ -6,7 +6,6 @@ import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { universalSearch } from '@/lib/api'; // Import our new function
-import { Layers } from 'lucide-react';
 
 // --- Sub-Components for a clean, world-class structure ---
 
@@ -44,14 +43,8 @@ const ProductCard = ({ product }: { product: any }) => (
                 <img src={product.imageUrls[0]} alt={product.name} className="w-full h-full object-cover" />
             </div>
             <div className="p-4">
-            <p className="font-semibold text-slate-800 truncate">{product.name}</p>
+                <p className="font-semibold text-slate-800 truncate">{product.name}</p>
                 <p className="text-sm text-slate-500">{product.brand?.name || 'Brand'}</p>
-                {/* --- CONDITIONAL CTA PREVIEW --- */}
-                {product._count.collections > 0 ? (
-                    <div className="flex items-center text-xs text-slate-600 mt-2"><Layers className="w-3 h-3 mr-1.5"/> Featured in {product._count.collections} collections</div>
-                ) : (
-                    <div className="flex items-center text-xs text-teal-600 mt-2">Available to shop</div>
-                )}
             </div>
         </Link>
     </div>

@@ -79,7 +79,7 @@ export default function Header() {
                     </Link>
                     
                     {/* Search Component */}
-                    <div ref={searchRef} className="flex-1 relative min-w-0">
+                    <div ref={searchRef} className="flex-1 relative">
                         <form onSubmit={handleSearchSubmit}>
                             <input 
                                 type="search" 

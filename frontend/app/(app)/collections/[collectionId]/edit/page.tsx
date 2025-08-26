@@ -80,7 +80,7 @@ export default function EditCollectionPage() {
         <div className="container mx-auto flex items-center justify-between">
             <Link href={`/collections/${collectionId}`} className="text-slate-600"><ArrowLeft/></Link>
             <input type="text" className="text-xl font-bold text-slate-900 bg-transparent text-center" value={collectionName} onChange={e => setCollectionName(e.target.value)} />
-            <button onClick={handleSave} disabled={updateMutation.isPending} className="bg-teal-500 text-white font-semibold px-6 py-2 rounded-lg shadow hover:bg-teal-600 disabled:bg-teal-300">
+            <button onClick={handleSave} disabled={updateMutation.isPending} className="bg-indigo-600 text-white px-4 py-2 rounded-lg">
                 {updateMutation.isPending ? 'Saving...' : 'Save'}
             </button>
         </div>
