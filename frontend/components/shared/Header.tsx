@@ -90,7 +90,7 @@ export default function Header() {
                                 onFocus={() => setIsFocused(true)}
                             />
                             <button type="submit" className="absolute top-1/2 right-4 -translate-y-1/2">
-                            <Search className="w-5 h-5 text-teal-500 absolute top-1/2 left-4 -translate-y-1/2" />
+                            <Search className="w-5 h-5 text-teal-500" />
                             </button>
                         </form>
                         

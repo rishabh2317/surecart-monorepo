@@ -1523,9 +1523,25 @@ try {
     });
     if (!collection) return reply.code(404).send({ message: "Collection not found" });
     const publicCollection = {
-        id: collection.id, name: collection.name, description: collection.description,
-        author: collection.user.username, authorId: collection.user.id, authorAvatar: collection.user.profileImageUrl || `https://placehold.co/100x100/E2E8F0/475569?text=${collection.user.username.charAt(0).toUpperCase()}`,
-        products: collection.products.map(cp => ({ id: cp.product.id, name: cp.product.name, imageUrl: cp.product.imageUrls[0], brand: cp.product.brand?.name || "Brand", buyUrl: `/redirect?collectionId=${collection.id}&productId=${cp.product.id}&affiliateUrl=${encodeURIComponent(cp.product.baseUrl)}` }))
+        id: collection.id,
+        name: collection.name,
+        description: collection.description,
+        author: collection.user.username,
+        authorAvatar: collection.user.profileImageUrl || `https://placehold.co/100x100/E2E8F0/475569?text=${collection.user.username.charAt(0).toUpperCase()}`,
+        products: collection.products.map((cp: any) => {
+            // THIS IS THE NEW LOGIC BLOCK YOU ASKED FOR
+            const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001';
+            const affiliateUrlWithTag = cp.product.baseUrl + `?tag=surecart-21`; // Placeholder affiliate tag
+            const buyUrl = `${backendUrl}/redirect?collectionId=${collection.id}&productId=${cp.product.id}&affiliateUrl=${encodeURIComponent(affiliateUrlWithTag)}`;
+
+            return { 
+                id: cp.product.id, 
+                name: cp.product.name, 
+                imageUrl: cp.product.imageUrls[0], 
+                brand: cp.product.brand?.name || "Brand", 
+                buyUrl: buyUrl // Use the correctly constructed URL
+            };
+        })
     };
     reply.send(publicCollection);
 } catch (error) { server.log.error(error); reply.code(500).send({ message: "Error fetching public collection" }); }
