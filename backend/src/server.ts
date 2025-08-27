@@ -1533,7 +1533,7 @@ try {
             // THIS IS THE NEW LOGIC BLOCK YOU ASKED FOR
             const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001';
             const affiliateUrlWithTag = cp.product.baseUrl + `?tag=surecart-21`; // Placeholder affiliate tag
-            const buyUrl = `${backendUrl}/redirect?collectionId=${collection.id}&productId=${cp.product.id}&affiliateUrl=${encodeURIComponent(affiliateUrlWithTag)}`;
+            //const buyUrl = `${backendUrl}/redirect?collectionId=${collection.id}&productId=${cp.product.id}&affiliateUrl=${encodeURIComponent(affiliateUrlWithTag)}`;
 
             return { 
                 id: cp.product.id, 
