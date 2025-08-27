@@ -1540,7 +1540,7 @@ try {
                 name: cp.product.name, 
                 imageUrl: cp.product.imageUrls[0], 
                 brand: cp.product.brand?.name || "Brand", 
-                buyUrl: buyUrl // Use the correctly constructed URL
+                buyUrl: cp.product.baseUrl, // Use the correctly constructed URL
             };
         })
     };
