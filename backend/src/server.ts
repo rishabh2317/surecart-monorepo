@@ -32,6 +32,7 @@ const AI_API_CALL_LIMIT = 10; // Our own internal monthly limit
 const allowedOrigins = [
     'http://localhost:3000',
     'https://surecart-monorepo.vercel.app', // your deployed frontend
+    'https://www.mystash.shop',
   ];
   
   // register cors normally but DO NOT register extra server.options('*')
