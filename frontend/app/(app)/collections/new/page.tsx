@@ -152,7 +152,7 @@ export default function NewCollectionPage() {
             <input type="text" readOnly className="flex-1 block w-full px-3 py-2 rounded-none rounded-l-lg bg-slate-100" value={shareableLink} />
             <button onClick={handleCopy} className={`inline-flex items-center px-4 py-2 border rounded-r-lg ${copied ? 'bg-green-600' : 'bg-teal-500'}`}><Copy className="w-5 h-5 text-white"/></button>
           </div>
-          <button onClick={closeModal} className="mt-6 w-full px-4 py-2 bg-slate-100 rounded-lg">Done</button>
+          <button onClick={closeModal} className="bg-teal-500 mt-6 w-full px-4 py-2 bg-slate-100 rounded-lg">Done</button>
         </div>
       </div>
     );
