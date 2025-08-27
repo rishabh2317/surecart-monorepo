@@ -111,9 +111,15 @@ const ProductCard = ({ product }: { product: any }) => {
                         <span>AI Review Summary</span>
                     </button>
                     
-                    <a href={product.baseUrl} target="_blank" rel="noopener noreferrer" className="mt-8 inline-flex items-center justify-center px-8 py-4 font-semibold text-white bg-slate-800 rounded-lg shadow-md hover:bg-slate-900">
-                               Shop Now <ExternalLink className="w-5 h-5 ml-2" />
-                           </a>
+                    <a 
+                href={product.baseUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full mt-4 flex items-center justify-center px-4 py-3 font-semibold text-white bg-slate-800 rounded-lg hover:bg-slate-900"
+            >
+                Shop Now
+                <ExternalLink className="w-4 h-4 ml-2" />
+            </a>
                 </div>
             </div>
 

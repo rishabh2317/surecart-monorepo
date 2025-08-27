@@ -61,7 +61,7 @@ export default function NewCollectionPage() {
         queryClient.invalidateQueries({ queryKey: ['dashboard', user?.id] });
         const slug = data.slug;
         const username = user?.username || 'creator';
-        setShareableLink(`http://localhost:3000/${username}/${slug}`);
+        setShareableLink(`${window.location.origin}/${username}/${slug}`);
         setShowModal(true);
       },
       onError: (error: any) => { 
