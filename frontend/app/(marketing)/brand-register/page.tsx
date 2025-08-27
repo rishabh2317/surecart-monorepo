@@ -48,7 +48,7 @@ export default function BrandRegisterPage() {
         <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-4">
             <div className="w-full max-w-2xl">
                 <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold text-slate-900">Partner with surecart</h1>
+                    <h1 className="text-4xl font-bold text-slate-900">Partner with Stash</h1>
                     <p className="mt-2 text-lg text-slate-600">Join a curated community of brands and creators.</p>
                 </div>
                 <div className="bg-white rounded-2xl shadow-lg p-8">

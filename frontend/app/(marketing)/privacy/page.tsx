@@ -13,7 +13,7 @@ export default function PrivacyPage() {
 
           <div className="prose prose-slate max-w-none prose-p:text-slate-700 prose-a:text-teal-600 hover:prose-a:text-teal-700">
             <p>
-              Welcome to surecart. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website. Please read this privacy policy carefully. If you do not agree with the terms of this privacy policy, please do not access the site.
+              Welcome to Stash. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website. Please read this privacy policy carefully. If you do not agree with the terms of this privacy policy, please do not access the site.
             </p>
             
             <h2>1. Collection of Your Information</h2>

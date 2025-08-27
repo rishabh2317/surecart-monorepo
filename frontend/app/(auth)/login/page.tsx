@@ -60,7 +60,7 @@ function LoginComponent() {
     <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-            <Link href="/"><h1 className="text-4xl font-bold text-slate-900">surecart</h1></Link>
+            <Link href="/"><h1 className="text-4xl font-bold text-slate-900">Stash</h1></Link>
         </div>
         <div className="bg-white rounded-2xl shadow-lg p-8 space-y-6">
             <div className="text-center">

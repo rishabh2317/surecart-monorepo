@@ -12,7 +12,7 @@ import Footer from "@/components/shared/Footer";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "surecart",
+  title: "stash",
   description: "The world-class creator commerce platform.",
 };
 

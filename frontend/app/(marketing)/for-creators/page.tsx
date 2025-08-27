@@ -27,7 +27,7 @@ export default function ForCreatorsPage() {
              Your Influence, Your Income.
            </h1>
            <p className="mt-6 max-w-2xl mx-auto text-lg sm:text-xl text-slate-700">
-             Stop just recommending products. Start earning from them. surecart gives you the tools to build beautiful, shoppable collections in minutes. No contracts, no negotiations. Just curate, share, and earn.
+             Stop just recommending products. Start earning from them. Stash gives you the tools to build beautiful, shoppable collections in minutes. No contracts, no negotiations. Just curate, share, and earn.
            </p>
            <div className="mt-10">
                <Link href="/login?action=signup" className="text-xl inline-flex items-center justify-center px-10 py-5 font-semibold text-white bg-teal-500 rounded-lg shadow-md hover:bg-teal-600">
@@ -80,7 +80,7 @@ export default function ForCreatorsPage() {
                    An idea, curated by you, <br /> can inspire the world.
                </h1>
                <p className="mt-6 max-w-2xl mx-auto text-lg sm:text-xl text-slate-700">
-                   surecart is a visual discovery engine that connects creators, their taste, and their audience with the products they love.
+                   Stash is a visual discovery engine that connects creators, their taste, and their audience with the products they love.
                </p>
            </div>
        </section>

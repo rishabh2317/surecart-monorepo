@@ -34,7 +34,7 @@ export default function ForBrandsPage() {
               Authentic Reach. Measurable Results.
             </h1>
             <p className="mt-6 max-w-2xl mx-auto text-lg sm:text-xl text-slate-700">
-              Stop guessing your ROI. surecart is a performance-based platform that connects your products with thousands of trusted creators who drive real sales.
+              Stop guessing your ROI. Stash is a performance-based platform that connects your products with thousands of trusted creators who drive real sales.
             </p>
             <div className="mt-10">
                 <Link href="/brand-register" className="text-xl inline-flex items-center justify-center px-10 py-5 font-semibold text-white bg-teal-500 rounded-lg shadow-md hover:bg-teal-600">
@@ -76,7 +76,7 @@ export default function ForBrandsPage() {
             <div className="container mx-auto px-4 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                 <div className="pr-8">
                     <p className="font-semibold text-teal-600">BUILT FOR GROWTH</p>
-                    <h2 className="text-4xl font-extrabold text-slate-900 mt-2">Why surecart Works</h2>
+                    <h2 className="text-4xl font-extrabold text-slate-900 mt-2">Why Stash Works</h2>
                     <p className="mt-4 text-lg text-slate-700">Traditional advertising is expensive and ineffective. We connect you with the long-tail of influence, where authenticity drives higher conversion rates and a better ROI.</p>
                     <ul className="mt-6 space-y-6">
                         <li className="flex items-start">

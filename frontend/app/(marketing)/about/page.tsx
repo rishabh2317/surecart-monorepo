@@ -26,7 +26,7 @@ export default function AboutPage() {
                     To build a more authentic internet.
                 </h1>
                 <p className="mt-6 max-w-3xl mx-auto text-lg sm:text-xl text-slate-700">
-                    We believe the future of commerce is not about ads, it is about people. surecart was founded on a simple idea: that an authentic recommendation from a trusted voice is the most powerful marketing force in the world. Our mission is to build the tools that unleash that power for everyone.
+                    We believe the future of commerce is not about ads, it is about people. Stash was founded on a simple idea: that an authentic recommendation from a trusted voice is the most powerful marketing force in the world. Our mission is to build the tools that unleash that power for everyone.
                 </p>
             </div>
         </section>
