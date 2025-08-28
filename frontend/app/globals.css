@@ -33,3 +33,9 @@ input,
 textarea {
   color: #1e293b; /* This is the hex code for slate-800 from our design system */
 }
+/* globals.css */
+.masonry-item {
+  break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+  -moz-column-break-inside: avoid;
+}
