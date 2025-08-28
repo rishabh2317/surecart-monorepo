@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import Link from 'next/link';
 import { API_BASE_URL } from '@/lib/config';
+import { Loader2 } from 'lucide-react';
 
 // --- A simple SVG for the Google Icon ---
 const GoogleIcon = () => (
@@ -24,6 +25,7 @@ function LoginComponent() {
   const [username, setUsername] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState('');
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   useEffect(() => {
     if (user && user.role === 'SHOPPER' && searchParams.get('action') === 'signup') {
@@ -49,15 +51,24 @@ function LoginComponent() {
   };
 
   const handleGoogleSignIn = async () => {
+    setIsGoogleLoading(true); // Activate loader
+    setError('');
       try {
           await signInWithGoogle();
       } catch (err: any) {
           setError(err.message);
+          setIsGoogleLoading(false); // Deactivate loader on error
       }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4 relative">
+      {isGoogleLoading && (
+        <div className="absolute inset-0 bg-white/80 z-10 flex flex-col items-center justify-center">
+            <Loader2 className="w-12 h-12 text-teal-500 animate-spin" />
+            <p className="mt-4 text-slate-700 font-semibold">Redirecting you...</p>
+        </div>
+      )}
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
             <Link href="/"><h1 className="text-4xl font-bold text-slate-900">Stash</h1></Link>

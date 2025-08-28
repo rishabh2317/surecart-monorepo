@@ -1,61 +1,54 @@
-// app/(creator)/collections/new/page.tsx
+// frontend/app/(app)/collections/new/page.tsx
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react'; // Import Suspense
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createCollection, searchProducts, getCampaigns, getBrands } from '@/lib/api';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation'; // Import useSearchParams
 import { getUserSession } from '@/lib/auth';
 import CreatorPageHeader from '@/components/creator/CreatorPageHeader';
 import {Check, Copy, X, UploadCloud, Edit, Search, ArrowLeft } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/lib/config';
 
-// --- Types (from your original code) ---
+// --- Types ---
 interface Product { id: string; name: string; brand: string; imageUrl: string; }
 interface User { id: string; username: string; email: string; }
 interface Brand { id: string; name: string; }
 interface Campaign { id: string; name: string; description: string; coverImageUrl: string; brand: { name: string } }
 
-// --- Sub-Components for the new design ---
-
+// --- Sub-Components ---
 const CampaignCard = ({ campaign, onClick }: { campaign: Campaign, onClick: () => void }) => (
-  <div onClick={onClick} className="cursor-pointer group">
-      <div className="aspect-video w-full bg-slate-200 rounded-lg overflow-hidden shadow-md group-hover:shadow-xl transition-shadow">
-          <img src={campaign.coverImageUrl} alt={campaign.name} className="w-full h-full object-cover" />
-      </div>
-      <h4 className="font-semibold text-slate-800 mt-2">{campaign.name}</h4>
-      <p className="text-sm text-slate-500">{campaign.brand.name}</p>
-  </div>
+    <div onClick={onClick} className="cursor-pointer group">
+        <div className="aspect-video w-full bg-slate-200 rounded-lg overflow-hidden shadow-md group-hover:shadow-xl transition-shadow">
+            <img src={campaign.coverImageUrl} alt={campaign.name} className="w-full h-full object-cover" />
+        </div>
+        <h4 className="font-semibold text-slate-800 mt-2">{campaign.name}</h4>
+        <p className="text-sm text-slate-500">{campaign.brand.name}</p>
+    </div>
 );
 
-
-
-
-// --- Main Component ---
-export default function NewCollectionPage() {
+// This is your original component, now renamed to allow for the Suspense wrapper
+function NewCollectionPageComponent() {
   const queryClient = useQueryClient();
   const router = useRouter();
+  const searchParams = useSearchParams(); // This hook now works correctly
   const [user, setUser] = useState<User | null>(null);
   
-  // Collection Details State
   const [collectionName, setCollectionName] = useState('');
   const [description, setDescription] = useState('');
   const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
   const [coverImage, setCoverImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   
-  // UI State for the right panel
+  const [shareableLink, setShareableLink] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [copied, setCopied] = useState(false);
+
   const [view, setView] = useState<'campaigns' | 'products'>('campaigns');
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
- 
-
-  // Success Modal State
-  const [shareableLink, setShareableLink] = useState('');
-  const [showModal, setShowModal] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const sessionUser = getUserSession();
@@ -63,155 +56,176 @@ export default function NewCollectionPage() {
     else setUser(sessionUser);
   }, [router]);
 
-  // --- Data Fetching ---
+  // This useEffect now correctly reads the URL parameters on page load
+  useEffect(() => {
+    const campaignId = searchParams.get('campaignId');
+    const campaignName = searchParams.get('campaignName');
+
+    if (campaignId && campaignName) {
+        setView('products');
+        setSelectedCampaign({
+            id: campaignId,
+            name: campaignName,
+            description: '', coverImageUrl: '', brand: { name: '' }
+        });
+    }
+  }, [searchParams]);
+
   const { data: brands = [] } = useQuery<Brand[]>({ queryKey: ['brands'], queryFn: getBrands });
-  const { data: campaigns = [] } = useQuery<Campaign[]>({ queryKey: ['campaigns'], queryFn: getCampaigns });
+  const { data: campaigns = [], isLoading: isLoadingCampaigns } = useQuery<Campaign[]>({ 
+      queryKey: ['campaigns'], 
+      queryFn: getCampaigns 
+  });
 
   const { data: availableProducts = [], isLoading: isLoadingProducts } = useQuery({
     queryKey: ['products', searchTerm, selectedBrand, selectedCampaign?.id],
     queryFn: () => searchProducts(searchTerm, selectedBrand, selectedCampaign?.id || null),
-     // Only run this query if we are in the products view OR if the user is actively searching
-     enabled: view === 'products' || searchTerm.length > 0, 
+    enabled: view === 'products' || searchTerm.length > 0, 
   });
 
-
-    const createCollectionMutation = useMutation({
-      mutationFn: createCollection,
-      onSuccess: (data) => {
-        queryClient.invalidateQueries({ queryKey: ['dashboard', user?.id] });
-        const slug = data.slug;
-        const username = user?.username || 'creator';
-        setShareableLink(`${window.location.origin}/${username}/${slug}`);
-        setShowModal(true);
-      },
-      onError: (error: any) => { 
-          alert(`Could not publish collection: ${error.message}`);
-      }
-    });
-
+  const createCollectionMutation = useMutation({
+    mutationFn: createCollection,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['dashboard', user?.id] });
+      const slug = data.slug;
+      const username = user?.username || 'creator';
+      setShareableLink(`${window.location.origin}/${username}/${slug}`);
+      setShowModal(true);
+    },
+    onError: (error: any) => { 
+        alert(`Could not publish collection: ${error.message}`);
+    }
+  });
+  
+  // (Your handleCoverImageUpload, handleSave, toggleProductSelection, etc. functions remain here unchanged)
+  // ...
 // --- Event Handlers ---
- const handleCampaignClick = (campaign: Campaign) => {
-    setSelectedCampaign(campaign);
-    setView('products');
-  };
+const handleCampaignClick = (campaign: Campaign) => {
+  setSelectedCampaign(campaign);
+  setView('products');
+};
 
-  const handleBackToCampaigns = () => {
-    setView('campaigns');
-    setSelectedCampaign(null);
-    setSearchTerm('');
+
+const handleBackToCampaigns = () => {
+  setView('campaigns');
+  setSelectedCampaign(null);
+  setSearchTerm('');
 };
 // When a search is performed, always switch to the products view
 useEffect(() => {
-  if (searchTerm) {
-      setView('products');
-      setSelectedCampaign(null); // Clear campaign selection when searching
-  }
+if (searchTerm) {
+    setView('products');
+    setSelectedCampaign(null); // Clear campaign selection when searching
+}
 }, [searchTerm]);
 
 
-  const handleCoverImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const MAX_FILE_SIZE = 10 * 1024 * 1024;
-      if (file.size > MAX_FILE_SIZE) {
-        alert("File is too large. Please select an image under 10MB.");
-        return;
-      }
-      setIsUploading(true);
-      const formData = new FormData();
-      formData.append('image', file);
-      const IMGBB_API_KEY = '5dc139f5ddfcb2f57f4f2e87b9d40dce';
-      try {
-        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
-          method: 'POST', body: formData,
-        });
-        const data = await res.json();
-        if (data.success) {
-          setCoverImage(data.data.url);
-        } else {
-          throw new Error(data.error?.message || 'Image upload failed');
-        }
-      } catch (error: any) {
-        alert(`Could not upload image: ${error.message || 'An unknown error occurred'}. Please ensure your ImgBB API key is correct.`);
-      } finally {
-        setIsUploading(false);
-      }
+
+
+const handleCoverImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  if (e.target.files && e.target.files[0]) {
+    const file = e.target.files[0];
+    const MAX_FILE_SIZE = 10 * 1024 * 1024;
+    if (file.size > MAX_FILE_SIZE) {
+      alert("File is too large. Please select an image under 10MB.");
+      return;
     }
-  };
-
-  const handleSave = () => {
-    if (!user) return alert("You must be logged in.");
-    if (!collectionName) return alert("Please add a title for your collection.");
-    createCollectionMutation.mutate({
-      name: collectionName, products: selectedProducts, userId: user.id,
-      description: description, coverImageUrl: coverImage,
-    });
-  };
-
-  const toggleProductSelection = (product: Product) => {
-    setSelectedProducts(prev => 
-      prev.some(p => p.id === product.id)
-        ? prev.filter(p => p.id !== product.id)
-        : [...prev, product]
-    );
-  };
-  
-  const handleCopy = () => {
-    navigator.clipboard.writeText(shareableLink);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const closeModal = () => {
-    setShowModal(false);
-    router.push('/dashboard');
-  };
-  // This hook creates a new list that is always sorted with selected items first
-  const sortedAvailableProducts = useMemo(() => {
-    if (!availableProducts) return [];
-    
-    return [...availableProducts].sort((a, b) => {
-      const aIsSelected = selectedProducts.some(p => p.id === a.id);
-      const bIsSelected = selectedProducts.some(p => p.id === b.id);
-      if (aIsSelected && !bIsSelected) return -1; // a comes first
-      if (!aIsSelected && bIsSelected) return 1;  // b comes first
-      return 0; // maintain original order
-    });
-  }, [availableProducts, selectedProducts]);
-  
-  if (showModal) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md text-center relative">
-          <button onClick={closeModal} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><X /></button>
-          <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4"><Check className="h-8 w-8 text-green-600" /></div>
-          <h3 className="text-2xl font-bold text-slate-800">Published!</h3>
-          <p className="mt-2 text-slate-600">Your collection is live. Share this link with your audience.</p>
-          <div className="mt-6 flex rounded-lg shadow-sm">
-            <input type="text" readOnly className="flex-1 block w-full px-3 py-2 rounded-none rounded-l-lg bg-slate-100" value={shareableLink} />
-            <button onClick={handleCopy} className={`inline-flex items-center px-4 py-2 border rounded-r-lg ${copied ? 'bg-green-600' : 'bg-teal-500'}`}><Copy className="w-5 h-5 text-white"/></button>
-          </div>
-          <button onClick={closeModal} className="bg-teal-500 mt-6 w-full px-4 py-2 bg-slate-100 rounded-lg">Done</button>
-        </div>
-      </div>
-    );
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('image', file);
+    const IMGBB_API_KEY = '5dc139f5ddfcb2f57f4f2e87b9d40dce';
+    try {
+      const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+        method: 'POST', body: formData,
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCoverImage(data.data.url);
+      } else {
+        throw new Error(data.error?.message || 'Image upload failed');
+      }
+    } catch (error: any) {
+      alert(`Could not upload image: ${error.message || 'An unknown error occurred'}. Please ensure your ImgBB API key is correct.`);
+    } finally {
+      setIsUploading(false);
+    }
   }
+};
 
+
+const handleSave = () => {
+  if (!user) return alert("You must be logged in.");
+  if (!collectionName) return alert("Please add a title for your collection.");
+  createCollectionMutation.mutate({
+    name: collectionName, products: selectedProducts, userId: user.id,
+    description: description, coverImageUrl: coverImage,
+  });
+};
+
+
+const toggleProductSelection = (product: Product) => {
+  setSelectedProducts(prev =>
+    prev.some(p => p.id === product.id)
+      ? prev.filter(p => p.id !== product.id)
+      : [...prev, product]
+  );
+};
+ const handleCopy = () => {
+  navigator.clipboard.writeText(shareableLink);
+  setCopied(true);
+  setTimeout(() => setCopied(false), 2000);
+};
+
+
+const closeModal = () => {
+  setShowModal(false);
+  router.push('/dashboard');
+};
+const sortedAvailableProducts = useMemo(() => {
+  if (!availableProducts) return [];
+ 
+  return [...availableProducts].sort((a, b) => {
+    const aIsSelected = selectedProducts.some(p => p.id === a.id);
+    const bIsSelected = selectedProducts.some(p => p.id === b.id);
+    if (aIsSelected && !bIsSelected) return -1; // a comes first
+    if (!aIsSelected && bIsSelected) return 1;  // b comes first
+    return 0; // maintain original order
+  });
+}, [availableProducts, selectedProducts]);
+ if (showModal) {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md text-center relative">
+        <button onClick={closeModal} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><X /></button>
+        <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4"><Check className="h-8 w-8 text-green-600" /></div>
+        <h3 className="text-2xl font-bold text-slate-800">Published!</h3>
+        <p className="mt-2 text-slate-600">Your collection is live. Share this link with your audience.</p>
+        <div className="mt-6 flex rounded-lg shadow-sm">
+          <input type="text" readOnly className="flex-1 block w-full px-3 py-2 rounded-none rounded-l-lg bg-slate-100" value={shareableLink} />
+          <button onClick={handleCopy} className={`inline-flex items-center px-4 py-2 border rounded-r-lg ${copied ? 'bg-green-600' : 'bg-teal-500'}`}><Copy className="w-5 h-5 text-white"/></button>
+        </div>
+        <button onClick={closeModal} className="bg-teal-500 mt-6 w-full px-4 py-2 bg-slate-100 rounded-lg">Done</button>
+      </div>
+    </div>
+  );
+}
+
+  // The rest of your component's JSX and logic also remain here
   return (
     <div className="flex flex-col h-screen bg-slate-50">
-       <CreatorPageHeader 
+       <CreatorPageHeader
     title="Create Collection"
     mainAction={
         <button onClick={handleSave} disabled={createCollectionMutation.isPending} className="bg-teal-500 text-white font-semibold px-6 py-2 rounded-lg shadow hover:bg-teal-600 disabled:bg-teal-300">
             {createCollectionMutation.isPending ? 'Publishing...' : 'Publish'}
         </button>
     }
-/>
-<div className="flex-grow flex-1 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden">
+ />
+ <div className="flex-grow flex-1 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden">
         {/* --- LEFT COLUMN: COLLECTION DETAILS (Redesigned) --- */}
         <main className="w-full md:w-1/2 p-6 md:overflow-y-auto">
           <div className="max-w-xl mx-auto">
-            
+           
             <div className="space-y-6">
               <div>
                 <label className="text-sm font-medium text-slate-700">Title</label>
@@ -234,7 +248,8 @@ useEffect(() => {
             </div>
           </div>
         </main>
-
+ 
+ 
         {/* --- RIGHT COLUMN: PRODUCT SELECTION (Redesigned) --- */}
         <aside className="w-full md:w-1/2 bg-white border-l border-slate-200 p-4 flex flex-col md:overflow-y-auto">
                     <div className="sticky top-0 bg-white pt-2 pb-4 z-10">
@@ -253,13 +268,14 @@ useEffect(() => {
                             <Search className="w-5 h-5 text-slate-400 absolute top-1/2 left-3 -translate-y-1/2" />
                         </div>
                     </div>
-
+ 
+ 
                     <div className="flex-grow overflow-y-auto">
                         {view === 'campaigns' ? (
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
                                 {/* Default Affiliate Campaigns */}
-                            
-                                
+                           
+                               
                                 {campaigns.map((campaign) => (
                                     <CampaignCard key={campaign.id} campaign={campaign} onClick={() => handleCampaignClick(campaign)} />
                                 ))}
@@ -284,4 +300,14 @@ useEffect(() => {
       </div>
     </div>
   );
+ 
 }
+
+// This is the new default export that wraps the page component in Suspense
+export default function NewCollectionPage() {
+    return (
+        <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
+            <NewCollectionPageComponent />
+        </Suspense>
+    );
+    }

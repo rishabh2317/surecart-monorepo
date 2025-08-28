@@ -4,14 +4,16 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getDashboardData, deleteCollection } from '@/lib/api';
+import { getDashboardData, deleteCollection, getCampaigns } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { API_BASE_URL } from '@/lib/config';
 import {
   Plus, BarChart2, Share2, Edit, Trash2, Check, ExternalLink,
-  MousePointerClick, Users, Star
+  MousePointerClick, Users, Star, Sparkles
 } from 'lucide-react';
+// --- Types ---
+interface Campaign { id: string; name: string; description: string; coverImageUrl: string; brand: { name: string } }
 
 // --- Helpers ---
 const getBrandDashboardData = async (brandId: string) => {
@@ -87,7 +89,29 @@ const BrandDashboard = ({ user }: { user: any }) => {
     </>
   );
 };
-
+// --- NEW COMPONENT: Campaign Quick Start ---
+const CampaignQuickStart = ({ campaigns }: { campaigns: Campaign[] }) => (
+    <div className="mb-8">
+        <div className="flex items-center space-x-3 mb-4">
+            <Sparkles className="w-6 h-6 text-teal-500" />
+            <h2 className="text-2xl font-bold text-slate-800">Start from a Campaign</h2>
+        </div>
+        <div className="flex space-x-4 overflow-x-auto pb-4 -mx-4 px-4">
+            {campaigns.map((campaign) => (
+                <Link 
+                    key={campaign.id} 
+                    href={`/collections/new?campaignId=${campaign.id}&campaignName=${encodeURIComponent(campaign.name)}`}
+                    className="flex-shrink-0 w-64 group"
+                >
+                    <div className="aspect-video w-full bg-slate-200 rounded-lg overflow-hidden shadow-md group-hover:shadow-xl transition-shadow">
+                        <img src={campaign.coverImageUrl} alt={campaign.name} className="w-full h-full object-cover" />
+                    </div>
+                    <h4 className="font-semibold text-slate-700 mt-2 truncate">{campaign.name}</h4>
+                </Link>
+            ))}
+        </div>
+    </div>
+);
 // --- CREATOR DASHBOARD ---
 const CreatorDashboard = ({ user }: { user: any }) => {
   const queryClient = useQueryClient();
@@ -98,6 +122,11 @@ const CreatorDashboard = ({ user }: { user: any }) => {
     queryFn: () => getDashboardData(user.id),
     enabled: !!user,
   });
+   // Fetch campaigns for the new section
+  const { data: campaigns = [], isLoading: isLoadingCampaigns } = useQuery<Campaign[]>({
+    queryKey: ['campaigns'],
+    queryFn: getCampaigns,
+});
 
   const deleteMutation = useMutation({
     mutationFn: deleteCollection,
@@ -119,7 +148,7 @@ const CreatorDashboard = ({ user }: { user: any }) => {
     setTimeout(() => setCopiedLink(null), 2000);
   };
 
-  if (isLoading) {
+  if (isLoading || isLoadingCampaigns) {
     return (
       <div className="flex items-center justify-center h-[80vh]">
         <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-teal-500"></div>
@@ -149,6 +178,7 @@ const CreatorDashboard = ({ user }: { user: any }) => {
           </Link>
         </div>
       </div>
+      {campaigns.length > 0 && <CampaignQuickStart campaigns={campaigns} />}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {collections.map((col: any) => (
