@@ -9,6 +9,8 @@ import { Search, User, Layers, Package, Loader2 } from 'lucide-react';
 import ProfileDropdown from './ProfileDropdown';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 import { universalSearch } from '@/lib/api';
+import Image from 'next/image';
+
 
 export default function Header() {
     const { user, loading } = useAuth();
@@ -73,11 +75,8 @@ export default function Header() {
             {isFocused && <div className="fixed inset-0 bg-black/50 z-30" />}
 
             <header className="sticky top-0 z-40 bg-white border-b border-slate-200">
-                <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex items-center h-16 gap-4">
-                <Link href="/" className="flex-shrink-0">
-                        <h1 className="text-3xl font-extrabold text-teal-600 tracking-tight">MyStash</h1>
-                    </Link>
-                    
+            <div className="w-full flex items-center justify-between h-16 pl-0 pr-4 sm:pr-6 lg:pr-8 gap-4">
+            <Link href="/" className="flex-shrink-0 flex items-center"> <Image src="/logo6.png" alt="Stash Logo" width={100} height={100} priority /> </Link>
                     {/* Search Component */}
                     <div ref={searchRef} className="flex-1 relative">
                         <form onSubmit={handleSearchSubmit}>

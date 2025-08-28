@@ -53,16 +53,16 @@ export default function ExplorePage() {
 
     return (
         <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-            <h1 className="text-3xl font-bold text-slate-900 mb-8">Explore</h1>
+            <h1 className="text-3xl text-slate-900 mb-8">Explore</h1>
             {user && user.role === 'SHOPPER' && <LikedCollectionsSection userId={user.id} />}
             {isLoading ? <div>Loading...</div> : (
                 <div className="space-y-12">
                     <section>
-                        <div className="flex items-center space-x-3 mb-6"><Zap className="w-7 h-7 text-yellow-500" /><h3 className="text-2xl font-bold text-slate-900">Trending Now</h3></div>
+                        <div className="flex items-center space-x-3 mb-6"><Zap className="w-7 h-7 text-yellow-500" /><h3 className="text-xl text-slate-900">Trending Now</h3></div>
                         <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-4">{trendingCollections.map((col: any) => <CollectionCard key={col.id} collection={col} />)}</div>
                     </section>
                     <section>
-                        <div className="flex items-center space-x-3 mb-6"><Clock className="w-7 h-7 text-blue-500" /><h3 className="text-2xl font-bold text-slate-900">Newest Collections</h3></div>
+                        <div className="flex items-center space-x-3 mb-6"><Clock className="w-7 h-7 text-blue-500" /><h3 className="text-xl text-slate-900">Newest Collections</h3></div>
                         <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-4">{newCollections.map((col: any) => <CollectionCard key={col.id} collection={col} />)}</div>
                     </section>
                 </div>

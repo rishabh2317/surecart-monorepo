@@ -70,12 +70,12 @@ function LoginComponent() {
         </div>
       )}
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-            <Link href="/"><h1 className="text-4xl font-bold text-slate-900">Stash</h1></Link>
+        <div className="text-center mb-4">
+            <Link href="/"><h1 className="text-4xl font-bold text-teal-600">Stash</h1></Link>
         </div>
         <div className="bg-white rounded-2xl shadow-lg p-8 space-y-6">
             <div className="text-center">
-                <h2 className="text-2xl font-bold text-slate-800">{isSignUp ? 'Create your Creator account' : 'Welcome back'}</h2>
+                <h2 className="text-2xl text-slate-800">{isSignUp ? 'Create your Creator account' : 'Welcome back'}</h2>
                 <p className="mt-2 text-slate-600">{isSignUp ? 'Join a community of top creators.' : 'Sign in to continue.'}</p>
             </div>
             <div>
