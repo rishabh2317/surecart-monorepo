@@ -61,10 +61,13 @@ export const deleteCollection = (collectionId: string) => {
     });
 };
 
-export const searchProducts = (query: string, brandId: string | null) => {
+export const searchProducts = (query: string, brandId: string | null, campaignId: string | null) => {
     const params = new URLSearchParams({ q: query });
     if (brandId) {
         params.append('brandId', brandId);
+    }
+    if (campaignId) { // <-- Add campaignId to params if it exists
+        params.append('campaignId', campaignId);
     }
     return fetcher(`/products/search?${params.toString()}`);
 };
@@ -87,3 +90,8 @@ export const getCreatorProfile = (username: string) => {
 export const getProductDetails = (productId: string) => {
     return fetcher(`/products/${productId}`);
 };
+
+export const getCampaigns = () => {
+    return fetcher('/public/campaigns');
+};
+

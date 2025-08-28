@@ -3,11 +3,11 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { createCollection, searchProducts } from '@/lib/api';
+import { createCollection, searchProducts, getCampaigns, getBrands } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import { getUserSession } from '@/lib/auth';
 import CreatorPageHeader from '@/components/creator/CreatorPageHeader';
-import {Check, Copy, X, UploadCloud, Edit, Search } from 'lucide-react';
+import {Check, Copy, X, UploadCloud, Edit, Search, ArrowLeft } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/lib/config';
 
@@ -15,13 +15,22 @@ import { API_BASE_URL } from '@/lib/config';
 interface Product { id: string; name: string; brand: string; imageUrl: string; }
 interface User { id: string; username: string; email: string; }
 interface Brand { id: string; name: string; }
+interface Campaign { id: string; name: string; description: string; coverImageUrl: string; brand: { name: string } }
 
-// --- API Functions (from your original code) ---
-const getBrands = async (): Promise<Brand[]> => {
-    const res = await fetch(`${API_BASE_URL}/brands`);
-    if (!res.ok) throw new Error("Failed to fetch brands");
-    return res.json();
-};
+// --- Sub-Components for the new design ---
+
+const CampaignCard = ({ campaign, onClick }: { campaign: Campaign, onClick: () => void }) => (
+  <div onClick={onClick} className="cursor-pointer group">
+      <div className="aspect-video w-full bg-slate-200 rounded-lg overflow-hidden shadow-md group-hover:shadow-xl transition-shadow">
+          <img src={campaign.coverImageUrl} alt={campaign.name} className="w-full h-full object-cover" />
+      </div>
+      <h4 className="font-semibold text-slate-800 mt-2">{campaign.name}</h4>
+      <p className="text-sm text-slate-500">{campaign.brand.name}</p>
+  </div>
+);
+
+
+
 
 // --- Main Component ---
 export default function NewCollectionPage() {
@@ -29,18 +38,24 @@ export default function NewCollectionPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   
+  // Collection Details State
   const [collectionName, setCollectionName] = useState('');
   const [description, setDescription] = useState('');
   const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
   const [coverImage, setCoverImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   
+  // UI State for the right panel
+  const [view, setView] = useState<'campaigns' | 'products'>('campaigns');
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
+ 
+
+  // Success Modal State
   const [shareableLink, setShareableLink] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [copied, setCopied] = useState(false);
-
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
 
   useEffect(() => {
     const sessionUser = getUserSession();
@@ -48,10 +63,15 @@ export default function NewCollectionPage() {
     else setUser(sessionUser);
   }, [router]);
 
-  const { data: brands = [] } = useQuery({ queryKey: ['brands'], queryFn: getBrands });
+  // --- Data Fetching ---
+  const { data: brands = [] } = useQuery<Brand[]>({ queryKey: ['brands'], queryFn: getBrands });
+  const { data: campaigns = [] } = useQuery<Campaign[]>({ queryKey: ['campaigns'], queryFn: getCampaigns });
+
   const { data: availableProducts = [], isLoading: isLoadingProducts } = useQuery({
-    queryKey: ['products', searchTerm, selectedBrand],
-    queryFn: () => searchProducts(searchTerm, selectedBrand),
+    queryKey: ['products', searchTerm, selectedBrand, selectedCampaign?.id],
+    queryFn: () => searchProducts(searchTerm, selectedBrand, selectedCampaign?.id || null),
+     // Only run this query if we are in the products view OR if the user is actively searching
+     enabled: view === 'products' || searchTerm.length > 0, 
   });
 
 
@@ -68,6 +88,26 @@ export default function NewCollectionPage() {
           alert(`Could not publish collection: ${error.message}`);
       }
     });
+
+// --- Event Handlers ---
+ const handleCampaignClick = (campaign: Campaign) => {
+    setSelectedCampaign(campaign);
+    setView('products');
+  };
+
+  const handleBackToCampaigns = () => {
+    setView('campaigns');
+    setSelectedCampaign(null);
+    setSearchTerm('');
+};
+// When a search is performed, always switch to the products view
+useEffect(() => {
+  if (searchTerm) {
+      setView('products');
+      setSelectedCampaign(null); // Clear campaign selection when searching
+  }
+}, [searchTerm]);
+
 
   const handleCoverImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -133,7 +173,6 @@ export default function NewCollectionPage() {
     return [...availableProducts].sort((a, b) => {
       const aIsSelected = selectedProducts.some(p => p.id === a.id);
       const bIsSelected = selectedProducts.some(p => p.id === b.id);
-      
       if (aIsSelected && !bIsSelected) return -1; // a comes first
       if (!aIsSelected && bIsSelected) return 1;  // b comes first
       return 0; // maintain original order
@@ -197,34 +236,53 @@ export default function NewCollectionPage() {
         </main>
 
         {/* --- RIGHT COLUMN: PRODUCT SELECTION (Redesigned) --- */}
-        <aside className="w-full md:w-1/2 bg-white border-r border-slate-200 p-4 md:overflow-y-auto">
-        <div className="md:sticky top-0 bg-white pt-2 pb-4 z-10">
-            <h3 className="font-bold mb-4 text-slate-800">Add Products ({selectedProducts.length})</h3>
-            <div className="relative mb-4">
-                <input type="search" placeholder="Search products..." className="w-full pl-10 pr-4 py-2 border rounded-lg" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
-                <Search className="w-5 h-5 text-slate-400 absolute top-1/2 left-3 -translate-y-1/2" />
-            </div>
-            <div className="flex space-x-2 overflow-x-auto pb-2">
-                <button onClick={() => setSelectedBrand(null)} className={`px-3 py-1 rounded-full text-sm font-semibold whitespace-nowrap ${!selectedBrand ? 'bg-teal-500 text-white' : 'bg-slate-100 text-slate-700'}`}>All Brands</button>
-                {brands.map(brand => (
-                    <button key={brand.id} onClick={() => setSelectedBrand(brand.id)} className={`px-3 py-1 rounded-full text-sm font-semibold whitespace-nowrap ${selectedBrand === brand.id ? 'bg-teal-500 text-white' : 'bg-slate-100 text-slate-700'}`}>{brand.name}</button>
-                ))}
-            </div>
-          </div>
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-          {isLoadingProducts ? <p>Loading...</p> : sortedAvailableProducts.map((product: Product) => {
-                const isSelected = selectedProducts.some(p => p.id === product.id);
-                return (
-                    <div key={product.id} onClick={() => toggleProductSelection(product)} className={`p-2 border rounded-lg cursor-pointer relative ${isSelected ? 'border-teal-500 ring-2 ring-teal-500' : 'border-slate-200'}`}>
-                        {isSelected && <div className="absolute top-1 right-1 bg-teal-500 text-white rounded-full p-0.5"><Check className="w-3 h-3" /></div>}
-                        <div className="aspect-square bg-slate-100 rounded-md overflow-hidden mb-2"><img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" /></div>
-                        <p className="font-semibold text-sm text-slate-800 truncate">{product.name}</p>
-                        <p className="text-xs text-slate-500">{product.brand}</p>
+        <aside className="w-full md:w-1/2 bg-white border-l border-slate-200 p-4 flex flex-col md:overflow-y-auto">
+                    <div className="sticky top-0 bg-white pt-2 pb-4 z-10">
+                        <div className="flex items-center mb-4">
+                            {view === 'products' && (
+                                <button onClick={handleBackToCampaigns} className="mr-3 p-2 text-slate-500 hover:bg-slate-100 rounded-full">
+                                    <ArrowLeft className="w-5 h-5" />
+                                </button>
+                            )}
+                             <h3 className="font-bold text-slate-800 text-lg">
+                                {view === 'campaigns' ? 'Start with a Campaign' : (selectedCampaign ? selectedCampaign.name : 'All Products')} ({selectedProducts.length} selected)
+                            </h3>
+                        </div>
+                        <div className="relative">
+                            <input type="search" placeholder="Or search all products..." className="w-full pl-10 pr-4 py-2 border rounded-lg" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                            <Search className="w-5 h-5 text-slate-400 absolute top-1/2 left-3 -translate-y-1/2" />
+                        </div>
                     </div>
-                );
-            })}
-          </div>
-        </aside>
+
+                    <div className="flex-grow overflow-y-auto">
+                        {view === 'campaigns' ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
+                                {/* Default Affiliate Campaigns */}
+                                <CampaignCard campaign={{ name: 'Amazon Associates', brand: { name: 'Marketplace' }, coverImageUrl: 'https://placehold.co/600x400/FF9900/FFFFFF?text=Amazon', description:'' , id:'amazon' }} onClick={() => handleCampaignClick({ name: 'Amazon Associates', brand: { name: 'Marketplace' }, coverImageUrl: '...', description:'' , id:'amazon' })} />
+                                <CampaignCard campaign={{ name: 'Flipkart Affiliates', brand: { name: 'Marketplace' }, coverImageUrl: 'https://placehold.co/600x400/2874F0/FFFFFF?text=Flipkart', description:'' , id:'flipkart' }} onClick={() => handleCampaignClick({ name: 'Flipkart Affiliates', brand: { name: 'Marketplace' }, coverImageUrl: '...', description:'' , id:'flipkart' })} />
+                                <CampaignCard campaign={{ name: 'Myntra Affiliates', brand: { name: 'Marketplace' }, coverImageUrl: 'https://placehold.co/600x400/E40046/FFFFFF?text=Myntra', description:'' , id:'myntra' }} onClick={() => handleCampaignClick({ name: 'Myntra Affiliates', brand: { name: 'Marketplace' }, coverImageUrl: '...', description:'' , id:'myntra' })} />
+                                
+                                {campaigns.map((campaign) => (
+                                    <CampaignCard key={campaign.id} campaign={campaign} onClick={() => handleCampaignClick(campaign)} />
+                                ))}
+                            </div>
+                        ) : (
+                             <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                                {isLoadingProducts ? <p>Loading products...</p> : sortedAvailableProducts.map((product: Product) => {
+                                    const isSelected = selectedProducts.some(p => p.id === product.id);
+                                    return (
+                                        <div key={product.id} onClick={() => toggleProductSelection(product)} className={`p-2 border rounded-lg cursor-pointer relative ${isSelected ? 'border-teal-500 ring-2 ring-teal-500' : 'border-slate-200'}`}>
+                                            {isSelected && <div className="absolute top-1 right-1 bg-teal-500 text-white rounded-full p-0.5"><Check className="w-3 h-3" /></div>}
+                                            <div className="aspect-square bg-slate-100 rounded-md overflow-hidden mb-2"><img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" /></div>
+                                            <p className="font-semibold text-sm text-slate-800 truncate">{product.name}</p>
+                                            <p className="text-xs text-slate-500">{product.brand}</p>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                </aside>
       </div>
     </div>
   );

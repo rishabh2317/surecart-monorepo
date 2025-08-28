@@ -30,7 +30,7 @@ export default function EditCollectionPage() {
   // 2. Fetch the list of all available products
   const { data: productList = [] } = useQuery({
     queryKey: ['products'],
-    queryFn: () => searchProducts('', null),
+    queryFn: () => searchProducts('', null, null),
   });
 
   // 3. Populate state once the collection data is loaded

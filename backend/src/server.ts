@@ -1223,6 +1223,24 @@ try {
     reply.code(500).send({ message: "Error fetching brand dashboard" });
 }
 });
+
+server.get('/public/campaigns', async (request, reply) => {
+    try {
+      const campaigns = await prisma.campaign.findMany({
+        include: {
+          brand: {
+            select: { name: true }
+          }
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+      reply.send(campaigns);
+    } catch (error) {
+      server.log.error(error);
+      reply.code(500).send({ message: "Error fetching campaigns" });
+    }
+  });
+  
 // GET /users/:userId/rewards
 // GET /users/:userId/rewards
 server.get('/users/:userId/rewards', async (request, reply) => {
@@ -1313,60 +1331,45 @@ try {
 
 // --- PUBLIC & UNIVERSAL ROUTES ---
 server.get('/products/search', async (request, reply) => {
-const { q, brandId } = request.query as { q?: string, brandId?: string };
-try {
-    const products = await prisma.product.findMany({
-        where: {
+    const { q, brandId, campaignId } = request.query as { q?: string, brandId?: string, campaignId?: string };
+    try {
+        const whereClause: any = {
             name: {
                 contains: q || '',
                 mode: 'insensitive',
             },
-            // This is the FIX: Only add brandId to the query if it exists
-            ...(brandId && { brandId: brandId })
-        },
-        include: { brand: true },
-    });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    const response = products.map(p => ({
-        id: p.id,
-        name: p.name,
-        // This is the FIX: Safely access the brand name
-        brand: p.brand?.name || 'Unknown Brand',
-        imageUrl: p.imageUrls[0],
-    }));
-    return response;
-} catch (error) {
-    server.log.error(error);
-    reply.code(500).send({ message: "Error searching products" });
-}
-});
-
-
-
-
-
-
-
-
-
-
-
-
+        };
+  
+        if (brandId) {
+            whereClause.brandId = brandId;
+        }
+        
+        // ++ NEW LOGIC: Filter by campaign if campaignId is provided ++
+        if (campaignId) {
+          whereClause.campaigns = {
+            some: {
+              campaignId: campaignId
+            }
+          };
+        }
+  
+        const products = await prisma.product.findMany({
+            where: whereClause,
+            include: { brand: true },
+        });
+  
+        const response = products.map(p => ({
+            id: p.id,
+            name: p.name,
+            brand: p.brand?.name || 'Unknown Brand',
+            imageUrl: p.imageUrls[0],
+        }));
+        return response;
+    } catch (error) {
+        server.log.error(error);
+        reply.code(500).send({ message: "Error searching products" });
+    }
+  });
 
 
 
@@ -1375,22 +1378,6 @@ try {
 server.post('/public/collections/:collectionId/view', async (request, reply) => {
 const { collectionId } = request.params as { collectionId: string };
 const { userId } = request.body as { userId?: string }; // userId is optional
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 try {
     await prisma.collectionView.create({
         data: {
@@ -1404,19 +1391,6 @@ try {
     reply.code(500).send({ message: "Error logging view" });
 }
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1458,20 +1432,6 @@ try {
 });
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // NEW: This now powers the categorized Explore page
 server.get('/public/explore', async (request: FastifyRequest, reply: FastifyReply) => {
 try {
@@ -1496,35 +1456,8 @@ try {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 server.get('/public/collections/:username/:slug', async (request, reply) => {
 const { username, slug } = request.params as { username?: string, slug?: string };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 if (!username || !slug) {
 return reply.code(400).send({ message: "Username and slug are required." });
@@ -1561,56 +1494,13 @@ try {
 });
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 server.get('/redirect', async (request, reply) => {
 const { collectionId, productId, affiliateUrl } = request.query as any;
 const decodedUrl = decodeURIComponent(affiliateUrl);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 if (!collectionId || !productId || !decodedUrl) {
     return reply.code(400).send({ message: "Missing tracking parameters." });
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 try {
@@ -1629,38 +1519,12 @@ try {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // Now that the click is saved, we can safely redirect.
 return reply
     .code(302)
     .header('Location', decodedUrl)
     .send();
 });
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

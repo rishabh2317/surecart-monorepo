@@ -42,6 +42,7 @@ model Brand {
   userId       String?
   user         User?     @relation(fields: [userId], references: [id])
   products     Product[]
+  campaigns    Campaign[]
 }
 
 model Product {
@@ -59,7 +60,27 @@ model Product {
   clicks          Click[]
   collections     CollectionProduct[]
   brand           Brand?              @relation(fields: [brandId], references: [id])
+  campaigns       CampaignProduct[] 
   @@index([name, description])
+}
+model Campaign {
+  id            String            @id @default(uuid())
+  name          String
+  description   String?
+  coverImageUrl String
+  brandId       String
+  brand         Brand             @relation(fields: [brandId], references: [id])
+  products      CampaignProduct[]
+  createdAt     DateTime          @default(now())
+}
+
+model CampaignProduct {
+  campaignId String
+  productId  String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([campaignId, productId])
 }
 
 model Collection {
