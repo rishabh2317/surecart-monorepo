@@ -16,9 +16,9 @@ const config: Config = {
       colors: {
         // This adds our new Teal primary color
         teal: {
-          '100': '#ccfbf1',
-          '500': '#14b8a6',
-          '600': '#0d9488',
+          '100': '#e6e0fb', // light tint
+          '500': '#683ee6', // your hex (primary)
+          '600': '#542ec9',
         },
         slate: {
           '50': '#f8fafc',
