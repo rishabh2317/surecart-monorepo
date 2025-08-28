@@ -4,6 +4,22 @@
   --background: #ffffff;
   --foreground: #171717;
 }
+@theme {
+  /* This is the new, direct way to define your custom colors */
+  --color-teal-100: #e6e0fb;
+  --color-teal-500: #683ee6;
+  --color-teal-600: #542ec9;
+
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+}
 
 @theme inline {
   --color-background: var(--background);

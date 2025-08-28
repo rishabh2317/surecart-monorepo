@@ -55,7 +55,7 @@ export default function ProductPickerModal({ isOpen, onClose, selectedProducts, 
                                     <div 
                                         key={product.id} 
                                         onClick={() => onToggleProduct(product)}
-                                        className={`p-2 border rounded-lg cursor-pointer ${isSelected ? 'border-indigo-500 ring-2 ring-indigo-500' : 'border-slate-200'}`}
+                                        className={`p-2 border rounded-lg cursor-pointer ${isSelected ? 'border-teal-500 ring-2 ring-teal-500' : 'border-slate-200'}`}
                                     >
                                         <div className="aspect-square bg-slate-100 rounded-md overflow-hidden mb-2">
                                             <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
@@ -70,7 +70,7 @@ export default function ProductPickerModal({ isOpen, onClose, selectedProducts, 
                 </div>
 
                 <footer className="p-4 border-t flex-shrink-0 text-right">
-                    <button onClick={onClose} className="bg-indigo-600 text-white font-semibold px-6 py-2 rounded-lg">Done</button>
+                    <button onClick={onClose} className="bg-teal-600 text-white font-semibold px-6 py-2 rounded-lg">Done</button>
                 </footer>
             </div>
         </div>

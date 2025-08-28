@@ -12,26 +12,6 @@ const config: Config = {
         // This makes 'Inter' the default font
         sans: ['Inter', 'sans-serif'],
       },
-    
-      colors: {
-        // This adds our new Teal primary color
-        teal: {
-          '100': '#e6e0fb', // light tint
-          '500': '#683ee6', // your hex (primary)
-          '600': '#542ec9',
-        },
-        slate: {
-          '50': '#f8fafc',
-          '100': '#f1f5f9',
-          '200': '#e2e8f0',
-          '300': '#cbd5e1',
-          '500': '#64748b',
-          '600': '#475569',
-          '700': '#334155',
-          '800': '#1e293b',
-          '900': '#0f172a',
-        },
-      },
       borderRadius: {
         'lg': '8px',
         'xl': '12px',
