@@ -1227,6 +1227,7 @@ try {
 server.get('/public/campaigns', async (request, reply) => {
     try {
       const campaigns = await prisma.campaign.findMany({
+        where: { isActive: true },
         include: {
           brand: {
             select: { name: true }

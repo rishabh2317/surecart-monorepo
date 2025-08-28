@@ -258,9 +258,7 @@ useEffect(() => {
                         {view === 'campaigns' ? (
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
                                 {/* Default Affiliate Campaigns */}
-                                <CampaignCard campaign={{ name: 'Amazon Associates', brand: { name: 'Marketplace' }, coverImageUrl: 'https://placehold.co/600x400/FF9900/FFFFFF?text=Amazon', description:'' , id:'amazon' }} onClick={() => handleCampaignClick({ name: 'Amazon Associates', brand: { name: 'Marketplace' }, coverImageUrl: '...', description:'' , id:'amazon' })} />
-                                <CampaignCard campaign={{ name: 'Flipkart Affiliates', brand: { name: 'Marketplace' }, coverImageUrl: 'https://placehold.co/600x400/2874F0/FFFFFF?text=Flipkart', description:'' , id:'flipkart' }} onClick={() => handleCampaignClick({ name: 'Flipkart Affiliates', brand: { name: 'Marketplace' }, coverImageUrl: '...', description:'' , id:'flipkart' })} />
-                                <CampaignCard campaign={{ name: 'Myntra Affiliates', brand: { name: 'Marketplace' }, coverImageUrl: 'https://placehold.co/600x400/E40046/FFFFFF?text=Myntra', description:'' , id:'myntra' }} onClick={() => handleCampaignClick({ name: 'Myntra Affiliates', brand: { name: 'Marketplace' }, coverImageUrl: '...', description:'' , id:'myntra' })} />
+                            
                                 
                                 {campaigns.map((campaign) => (
                                     <CampaignCard key={campaign.id} campaign={campaign} onClick={() => handleCampaignClick(campaign)} />

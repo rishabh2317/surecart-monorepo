@@ -68,6 +68,7 @@ model Campaign {
   name          String
   description   String?
   coverImageUrl String
+  isActive      Boolean           @default(true)
   brandId       String
   brand         Brand             @relation(fields: [brandId], references: [id])
   products      CampaignProduct[]
