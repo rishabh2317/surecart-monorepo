@@ -97,7 +97,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const appUser = await res.json();
         if (!res.ok) throw new Error(appUser.message);
 
-        handleSuccessfulAuth(appUser, true); // Treat all social sign-ins as potentially new users for routing
+        handleSuccessfulAuth(appUser, appUser.isNewUser); // Treat all social sign-ins as potentially new users for routing
         
     } catch (error) {
         console.error("Google Sign-In Error:", error);

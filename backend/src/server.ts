@@ -273,23 +273,35 @@ try {
 // POST /auth/social
 server.post('/auth/social', async (request, reply) => {
 const { email, username, authProviderId, profileImageUrl } = request.body as any;
+const existingUser = await prisma.user.findUnique({ where: { email } });
 
 if (!email || !authProviderId || !username) {
     return reply.code(400).send({ message: "Email, username, and authProviderId are required." });
 }
 
 try {
-    const user = await prisma.user.upsert({
-        where: { email },
-        update: { authProviderId }, // Update auth provider ID if user exists
-        create: {
-            email,
-            username,
-            authProviderId,
-            profileImageUrl,
-            role: 'SHOPPER', // New social signups default to Shopper
-        },
-    });
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    
+    let user;
+    let isNewUser = false;
+
+    if (existingUser) {
+        user = await prisma.user.update({
+            where: { email },
+            data: { authProviderId }, // Update the auth provider ID just in case
+        });
+    } else {
+        user = await prisma.user.create({
+            data: {
+                email,
+                username,
+                authProviderId,
+                profileImageUrl,
+                role: 'SHOPPER', // New social signups always default to Shopper
+            },
+        });
+        isNewUser = true; // This is a new user
+    }
 
     const { authProviderId: _, ...userResponse } = user;
     reply.send(userResponse);
