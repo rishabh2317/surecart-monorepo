@@ -12,32 +12,46 @@ async function getHomepageFeed() {
 }
 
 const CollectionCard = ({ collection }: { collection: any }) => (
-    <div className="break-inside-avoid mb-4">
-        <Link href={`/${collection.author}/${collection.slug}`} className="block group relative">
-            <img 
-                src={collection.coverImage} 
-                alt={collection.name} 
-                className="w-full rounded-2xl shadow-lg hover:shadow-xl transition-shadow" 
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl">
-                <div className="absolute bottom-0 left-0 p-4 w-full">
-                    <h3 className="font-bold text-white text-md leading-tight">{collection.name}</h3>
-                    {/* THIS IS THE NEW SECTION */}
-                    <div className="flex items-center justify-between text-white mt-2">
-                        <div className="flex items-center space-x-2">
-                            <img src={collection.authorAvatar} alt={collection.author} className="w-6 h-6 rounded-full border border-white" />
-                            <span className="text-xs font-medium">{collection.author}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                            <Eye className="w-4 h-4" />
-                            <span className="text-xs font-medium">{collection.views.toLocaleString()}</span>
-                        </div>
-                    </div>
-                </div>
+    <div className="break-inside-avoid mb-4"> {/* this prevents breaking */}
+      <Link
+        href={`/${collection.author}/${collection.slug}`}
+        className="block group relative"
+      >
+        <img
+          src={collection.coverImage}
+          alt={collection.name}
+          className="w-full rounded-2xl shadow-lg hover:shadow-xl transition-shadow"
+        />
+  
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl">
+          <div className="absolute bottom-0 left-0 p-4 w-full">
+            <h3 className="font-bold text-white text-md leading-tight">
+              {collection.name}
+            </h3>
+  
+            {/* Footer */}
+            <div className="flex items-center justify-between text-white mt-2">
+              <div className="flex items-center space-x-2">
+                <img
+                  src={collection.authorAvatar}
+                  alt={collection.author}
+                  className="w-6 h-6 rounded-full border border-white"
+                />
+                <span className="text-xs font-medium">{collection.author}</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <Eye className="w-4 h-4" />
+                <span className="text-xs font-medium">
+                  {collection.views.toLocaleString()}
+                </span>
+              </div>
             </div>
-        </Link>
+          </div>
+        </div>
+      </Link>
     </div>
-);
+  );
+  
 
 export default function HomePage() {
     const { data: collections = [], isLoading } = useQuery({ queryKey: ['homepageFeed'], queryFn: getHomepageFeed });
