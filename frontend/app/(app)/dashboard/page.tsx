@@ -12,6 +12,7 @@ import {
   Plus, BarChart2, Share2, Edit, Trash2, Check, ExternalLink,
   MousePointerClick, Users, Star, Sparkles
 } from 'lucide-react';
+import CampaignModal from '@/components/creator/CampaignModal';
 // --- Types ---
 interface Campaign { id: string; name: string; description: string; coverImageUrl: string; brand: { name: string } }
 
@@ -89,33 +90,35 @@ const BrandDashboard = ({ user }: { user: any }) => {
     </>
   );
 };
-// --- NEW COMPONENT: Campaign Quick Start ---
-const CampaignQuickStart = ({ campaigns }: { campaigns: Campaign[] }) => (
-    <div className="mb-8">
-        <div className="flex items-center space-x-3 mb-4">
-            <Sparkles className="w-6 h-6 text-teal-500" />
-            <h2 className="text-2xl font-bold text-slate-800">Start from a Campaign</h2>
-        </div>
-        <div className="flex space-x-4 overflow-x-auto pb-4 -mx-4 px-4">
-            {campaigns.map((campaign) => (
-                <Link 
-                    key={campaign.id} 
-                    href={`/collections/new?campaignId=${campaign.id}&campaignName=${encodeURIComponent(campaign.name)}`}
-                    className="flex-shrink-0 w-64 group"
-                >
-                    <div className="aspect-video w-full bg-slate-200 rounded-lg overflow-hidden shadow-md group-hover:shadow-xl transition-shadow">
-                        <img src={campaign.coverImageUrl} alt={campaign.name} className="w-full h-full object-cover" />
-                    </div>
-                    <h4 className="font-semibold text-slate-700 mt-2 truncate">{campaign.name}</h4>
-                </Link>
-            ))}
-        </div>
-    </div>
+// --- RENAMED & MODIFIED COMPONENT: CampaignsSection ---
+const CampaignsSection = ({ campaigns, onCampaignClick }: { campaigns: Campaign[], onCampaignClick: (campaign: Campaign) => void }) => (
+  <div className="mt-12">
+      <div className="flex items-center space-x-3 mb-4">
+          <Sparkles className="w-6 h-6 text-teal-500" />
+          <h2 className="text-2xl font-bold text-slate-800">Start a New Collection from a Campaign</h2>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {campaigns.map((campaign) => (
+              <button 
+                  key={campaign.id} 
+                  onClick={() => onCampaignClick(campaign)}
+                  className="text-left group"
+              >
+                  <div className="aspect-video w-full bg-slate-200 rounded-lg overflow-hidden shadow-md group-hover:shadow-xl transition-shadow">
+                      <img src={campaign.coverImageUrl} alt={campaign.name} className="w-full h-full object-cover" />
+                  </div>
+                  <h4 className="font-semibold text-slate-700 mt-2 truncate">{campaign.name}</h4>
+              </button>
+          ))}
+      </div>
+  </div>
 );
 // --- CREATOR DASHBOARD ---
 const CreatorDashboard = ({ user }: { user: any }) => {
   const queryClient = useQueryClient();
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
 
   const { data: dashboardData, isLoading } = useQuery({
     queryKey: ['dashboard', user?.id],
@@ -134,6 +137,10 @@ const CreatorDashboard = ({ user }: { user: any }) => {
       queryClient.invalidateQueries({ queryKey: ['dashboard', user?.id] });
     },
   });
+  const handleCampaignClick = (campaign: Campaign) => {
+    setSelectedCampaign(campaign);
+    setIsModalOpen(true);
+};
 
   const handleDelete = (collectionId: string) => {
     if (window.confirm("Are you sure you want to delete this collection?")) {
@@ -178,7 +185,6 @@ const CreatorDashboard = ({ user }: { user: any }) => {
           </Link>
         </div>
       </div>
-      {campaigns.length > 0 && <CampaignQuickStart campaigns={campaigns} />}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {collections.map((col: any) => (
@@ -220,6 +226,14 @@ const CreatorDashboard = ({ user }: { user: any }) => {
           <p className="mt-1 text-sm text-slate-500">Click New Collection to get started.</p>
         </div>
       )}
+
+       {/* NEW LAYOUT: Campaigns are now listed AFTER collections */}
+       {campaigns.length > 0 && <CampaignsSection campaigns={campaigns} onCampaignClick={handleCampaignClick} />}
+       <CampaignModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        campaign={selectedCampaign}
+      />
     </>
   );
 };
