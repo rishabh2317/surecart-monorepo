@@ -91,7 +91,7 @@ const ProductCard = ({ product }: { product: any }) => {
 
     return (
         <>
-            <div className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300 flex flex-col overflow-hidden group">
+            <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-shadow duration-300 flex flex-col overflow-hidden group">
                 <div className="aspect-square w-full overflow-hidden">
                     <img 
                         src={product.imageUrl} 
@@ -99,31 +99,31 @@ const ProductCard = ({ product }: { product: any }) => {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                     />
                 </div>
-                <div className="p-5 flex-grow flex flex-col">
-                    <p className="text-sm text-slate-500">{product.brand}</p>
-                    <h3 className="font-bold text-lg text-slate-900 flex-grow mt-1">{product.name}</h3>
+                <div className="p-4 flex-grow flex flex-col">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{product.brand}</p>
+                    <h3 className="font-bold text-md text-slate-800 flex-grow mt-1">{product.name}</h3>
                     
-                    <button 
-                        onClick={() => setIsAiDrawerOpen(true)}
-                        className="w-full text-sm font-semibold text-teal-600 hover:text-teal-600 mt-4 flex items-center justify-center space-x-2 py-2 bg-teal-100 rounded-lg hover:bg-teal-50"
-                    >
-                        <Sparkles className="w-4 h-4" />
-                        <span>AI Review Summary</span>
-                    </button>
-                    
-                    <a 
-                href={product.buyUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full mt-4 flex items-center justify-center px-4 py-3 font-semibold text-white bg-slate-800 rounded-lg hover:bg-slate-900"
-            >
-                Shop Now
-                <ExternalLink className="w-4 h-4 ml-2" />
-            </a>
+                    <div className="mt-4 space-y-2">
+                        <button 
+                            onClick={() => setIsAiDrawerOpen(true)}
+                            className="w-full text-sm font-semibold text-teal-600 hover:text-teal-700 flex items-center justify-center space-x-2 py-2 bg-teal-50 rounded-lg hover:bg-teal-100"
+                        >
+                            <Sparkles className="w-4 h-4" />
+                            <span>AI Summary</span>
+                        </button>
+                        
+                        <a 
+                            href={product.buyUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full flex items-center justify-center px-4 py-2 font-semibold text-white bg-slate-800 rounded-lg hover:bg-slate-900"
+                        >
+                            Shop Now
+                            <ExternalLink className="w-4 h-4 ml-2" />
+                        </a>
+                    </div>
                 </div>
             </div>
-
-            {/* The modal is now correctly placed within the fragment */}
             <AskAIDrawer
                 productName={product.name}
                 isOpen={isAiDrawerOpen}
@@ -274,12 +274,15 @@ export default function PublicCollectionPage() {
     const handleFollow = () => {
         if (!user) {
             openAuthModal(pathname);
-        } else if (collection) {
+        } else if (collection && collection.authorId) {
             if (isFollowing) {
                 unfollowMutation.mutate({ creatorId: collection.authorId, userId: user.id });
             } else {
                 followMutation.mutate({ creatorId: collection.authorId, userId: user.id });
             }
+        }else {
+            console.error("Could not follow creator: authorId is missing from collection data.");
+            alert("Could not perform action. Please try again later.");
         }
     };
 
@@ -311,37 +314,44 @@ export default function PublicCollectionPage() {
 
     return (
         <>
-        <div className="bg-slate-50">
-            <header className="py-12 px-4 text-center bg-white border-b border-slate-200">
-                <div className="flex justify-center items-center mb-4"><img src={collection.authorAvatar} alt={collection.author} className="w-20 h-20 rounded-full shadow-lg" /></div>
-                <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">{collection.name}</h1>
-                <p className="mt-4 max-w-2xl mx-auto text-lg text-slate-700">A hand picked collection by <span className="font-semibold text-teal-600">{collection.author}</span></p>
-                {collection.description && (<p className="mt-4 max-w-2xl mx-auto text-md text-slate-600 italic">{collection.description}</p>)}
-                <div className="mt-6 flex flex-wrap justify-center items-center gap-2 sm:gap-4">
-                <button onClick={handleFollow} disabled={followMutation.isPending || unfollowMutation.isPending} className="flex items-center space-x-2 px-4 py-2 bg-white border rounded-full text-slate-700 hover:bg-slate-100">
-    <UserPlus className={`w-5 h-5 ${isFollowing ? 'text-green-500' : 'text-blue-500'}`} />
-    <span>{isFollowing ? 'Following' : 'Follow'}</span>
-</button>
-                    <button onClick={handleToggleLike} disabled={likeMutation.isPending} className="flex items-center space-x-2 px-4 py-2 bg-white border rounded-full text-slate-700 hover:bg-slate-100">
-                        <Heart className={`w-5 h-5 transition-colors ${isLiked ? 'text-red-500 fill-current' : 'text-slate-500'}`} />
-                        <span className="font-medium">{isLiked ? 'Liked' : 'Like'}</span>
-                    </button>
-                    <button onClick={handleCommentClick} className="flex items-center space-x-2 px-4 py-2 bg-white border rounded-full text-slate-700 hover:bg-slate-100">
-                        <MessageCircle className="w-5 h-5 text-gray-500" />
-                        <span>Comment</span>
-                    </button>
-                    <button onClick={handleShare} className="flex items-center space-x-2 px-4 py-2 bg-white border rounded-full text-slate-700 hover:bg-slate-100">
-                            <Share2 className="w-5 h-5 text-teal-500" />
-                            <span>Share</span>
-                        </button>
-                </div>
-            </header>
+         <div className="bg-slate-50 min-h-screen">
+                <header className="py-8 px-4 bg-white border-b border-slate-200">
+                    <div className="container mx-auto">
+                        <div className="flex flex-col md:flex-row items-center md:items-start text-center md:text-left gap-6">
+                            <img src={collection.authorAvatar} alt={collection.author} className="w-24 h-24 rounded-full shadow-lg flex-shrink-0" />
+                            <div className="flex-grow">
+                                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">{collection.name}</h1>
+                                <p className="mt-1 text-slate-600">
+                                    A collection by <span className="font-semibold text-teal-600">{collection.author}</span>
+                                </p>
+                                {collection.description && (
+                                    <p className="mt-2 max-w-2xl mx-auto md:mx-0 text-sm text-slate-500">{collection.description}</p>
+                                )}
+                            </div>
+                            <div className="flex-shrink-0 flex items-center justify-center gap-2 pt-2">
+                                <button onClick={handleFollow} disabled={followMutation.isPending || unfollowMutation.isPending} className="flex items-center space-x-2 px-4 py-2 bg-white border rounded-full text-sm font-semibold text-slate-700 hover:bg-slate-100">
+                                    <UserPlus className={`w-4 h-4 ${isFollowing ? 'text-green-500' : 'text-blue-500'}`} />
+                                    <span>{isFollowing ? 'Following' : 'Follow'}</span>
+                                </button>
+                                <button onClick={handleToggleLike} disabled={likeMutation.isPending} className="p-2 bg-white border rounded-full text-slate-500 hover:bg-slate-100">
+                                    <Heart className={`w-5 h-5 transition-colors ${isLiked ? 'text-red-500 fill-current' : ''}`} />
+                                </button>
+                                <button onClick={handleCommentClick} className="p-2 bg-white border rounded-full text-slate-500 hover:bg-slate-100">
+                                    <MessageCircle className="w-5 h-5" />
+                                </button>
+                                <button onClick={handleShare} className="p-2 bg-white border rounded-full text-slate-500 hover:bg-slate-100">
+                                    <Share2 className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </header>
 
-            <main className="container mx-auto p-4 sm:p-6 lg:px-8">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {collection.products.map((product: any) => (<ProductCard key={product.id} product={product} />))}
-                </div>
-            </main>
+                <main className="container mx-auto p-4 sm:p-6 lg:p-8">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                        {collection.products.map((product: any) => (<ProductCard key={product.id} product={product} />))}
+                    </div>
+                </main>
             {showComments && (
                 <section ref={commentsSectionRef} className="bg-white py-8 sm:py-12">
                     <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
