@@ -1225,7 +1225,7 @@ server.get('/public/campaigns/:campaignId/categories', async (request, reply) =>
 
 // --- PUBLIC & UNIVERSAL ROUTES ---
 server.get('/products/search', async (request, reply) => {
-    const { q, brandId, campaignId, categoryId } = request.query as { q?: string, brandId?: string, campaignId?: string, categoryId?: string };
+    const { q, brandId, campaignId } = request.query as { q?: string, brandId?: string, campaignId?: string, categoryId?: string };
     try {
         const whereClause: any = {
             name: {
