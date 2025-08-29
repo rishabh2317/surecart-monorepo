@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth-context';
 import Link from 'next/link';
 import { API_BASE_URL } from '@/lib/config';
 import { Loader2 } from 'lucide-react';
+import Image from 'next/image';
 
 // --- A simple SVG for the Google Icon ---
 const GoogleIcon = () => (
@@ -70,9 +71,6 @@ function LoginComponent() {
         </div>
       )}
       <div className="w-full max-w-md">
-        <div className="text-center mb-4">
-            <Link href="/"><h1 className="text-4xl font-bold text-teal-600">Stash</h1></Link>
-        </div>
         <div className="bg-white rounded-2xl shadow-lg p-8 space-y-6">
             <div className="text-center">
                 <h2 className="text-2xl text-slate-800">{isSignUp ? 'Create your Creator account' : 'Welcome back'}</h2>

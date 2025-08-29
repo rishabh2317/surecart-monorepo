@@ -6,9 +6,10 @@
 }
 @theme {
   /* This is the new, direct way to define your custom colors */
-  --color-teal-100: #e6e0fb;
-  --color-teal-500: #683ee6;
-  --color-teal-600: #542ec9;
+  --color-teal-50:  #151920;
+  --color-teal-100: #ffe6d9;
+  --color-teal-500: #ff5100;
+  --color-teal-600: #e64900;
 
   --color-slate-50: #f8fafc;
   --color-slate-100: #f1f5f9;

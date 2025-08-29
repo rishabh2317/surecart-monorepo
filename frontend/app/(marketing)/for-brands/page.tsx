@@ -18,7 +18,7 @@ const FeatureCard = ({ icon: Icon, title, description }: any) => (
 const StatCard = ({ value, label }: { value: string, label: string }) => (
     <div className="bg-teal-50 p-6 rounded-xl text-center">
         <p className="text-4xl font-extrabold text-teal-600">{value}</p>
-        <p className="mt-1 text-sm font-medium text-teal-800">{label}</p>
+        <p className="mt-1 text-sm font-medium text-slate-200">{label}</p>
     </div>
 );
 

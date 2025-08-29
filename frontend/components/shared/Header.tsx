@@ -76,7 +76,7 @@ export default function Header() {
 
             <header className="sticky top-0 z-40 bg-white border-b border-slate-200">
             <div className="w-full flex items-center justify-between h-16 pl-0 pr-4 sm:pr-6 lg:pr-8 gap-4">
-            <Link href="/" className="flex-shrink-0 flex items-center"> <Image src="/logo6.png" alt="Stash Logo" width={100} height={100} priority /> </Link>
+            <Link href="/" className="flex-shrink-0 flex items-center"> <Image src="/logo11.png" alt="Stash Logo" width={100} height={100} priority /> </Link>
                     {/* Search Component */}
                     <div ref={searchRef} className="flex-1 relative">
                         <form onSubmit={handleSearchSubmit}>

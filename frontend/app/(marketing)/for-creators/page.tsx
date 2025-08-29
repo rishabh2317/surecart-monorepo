@@ -42,7 +42,7 @@ export default function ForCreatorsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
                     {/* Step 1: Curate */}
                     <div className="flex flex-col items-center">
-                        <div className="flex items-center justify-center h-48 w-48 rounded-2xl bg-teal-100 mb-6">
+                        <div className="flex items-center justify-center h-48 w-48 rounded-2xl bg-teal-50 mb-6">
                             <MousePointerClick className="w-20 h-20 text-teal-600" />
                         </div>
                         <h2 className="text-2xl font-bold text-slate-800">1. Curate</h2>
@@ -52,7 +52,7 @@ export default function ForCreatorsPage() {
                     </div>
                     {/* Step 2: Share */}
                     <div className="flex flex-col items-center">
-                        <div className="flex items-center justify-center h-48 w-48 rounded-2xl bg-teal-100 mb-6">
+                        <div className="flex items-center justify-center h-48 w-48 rounded-2xl bg-teal-50 mb-6">
                             <Share2 className="w-20 h-20 text-teal-600" />
                         </div>
                         <h2 className="text-2xl font-bold text-slate-800">2. Share</h2>
@@ -62,7 +62,7 @@ export default function ForCreatorsPage() {
                     </div>
                     {/* Step 3: Earn */}
                     <div className="flex flex-col items-center">
-                        <div className="flex items-center justify-center h-48 w-48 rounded-2xl bg-teal-100 mb-6">
+                        <div className="flex items-center justify-center h-48 w-48 rounded-2xl bg-teal-50 mb-6">
                             <Wallet className="w-20 h-20 text-teal-600" />
                         </div>
                         <h2 className="text-2xl font-bold text-slate-800">3. Earn</h2>
