@@ -347,40 +347,7 @@ try {
 
 
 // POST /brands/register
-server.post('/brands/register', async (request, reply) => {
-const { brandName, category, presence, website, email, name } = request.body as any;
 
-try {
-    // In a real app, we would create a temporary "BrandApplication" model.
-    // For the MVP, we can create a placeholder user and brand.
-    const placeholderEmail = `brand-${Date.now()}@surecart-pending.dev`;
-    const hashedPassword = await bcrypt.hash(`temp_password_${Date.now()}`, 10);
-     const brandUser = await prisma.user.create({
-        data: {
-            email: placeholderEmail,
-            username: brandName.toLowerCase().replace(/\s+/g, ''),
-            authProviderId: hashedPassword,
-            role: 'BRAND',
-            fullName: name,
-        }
-    });
-
-    await prisma.brand.create({
-        data: {
-            name: brandName,
-            websiteUrl: website,
-            userId: brandUser.id,
-            // You can add category and presence to your schema if needed
-        }
-    });
-     // In a real app, you would trigger a confirmation email here.
-    // e.g., await sendBrandConfirmationEmail({ brandName, email, name });
-    reply.code(201).send({ message: 'Brand application submitted successfully.' });
-} catch (error) {
-    server.log.error(error);
-    reply.code(500).send({ message: 'An error occurred while submitting the application.' });
-}
-});
 
 // POST /auth/forgot-password
 server.post('/auth/forgot-password', async (request, reply) => {
@@ -1430,106 +1397,7 @@ return reply
     .send();
 });
 
-// GET /brands/:brandId/dashboard/overview
-server.get('/brands/:brandId/dashboard/overview', async (request, reply) => {
-    const { brandId } = request.params as { brandId: string };
-    try {
-        const productIds = (await prisma.product.findMany({ where: { brandId }, select: { id: true }})).map(p => p.id);
 
-        const totalClicks = await prisma.click.count({ where: { productId: { in: productIds } } });
-        const collections = await prisma.collection.findMany({
-            where: { products: { some: { productId: { in: productIds } } } },
-            distinct: ['id'],
-            include: { user: true }
-        });
-        const totalCollections = collections.length;
-        const totalCreators = new Set(collections.map(c => c.userId)).size;
-
-        const topCreators = collections.reduce((acc, col) => {
-            const creator = acc.find(c => c.id === col.userId);
-            if (creator) {
-                creator.collectionsCount++;
-            } else {
-                acc.push({
-                    id: col.userId,
-                    username: col.user.username,
-                    profileImageUrl: col.user.profileImageUrl,
-                    collectionsCount: 1,
-                });
-            }
-            return acc;
-        }, [] as any[]).sort((a,b) => b.collectionsCount - a.collectionsCount).slice(0, 5);
-        
-        const topProducts = await prisma.product.findMany({
-            where: { id: { in: productIds } },
-            include: { _count: { select: { collections: true } } },
-            orderBy: { collections: { _count: 'desc' } },
-            take: 5
-        });
-
-        reply.send({
-            summary: { totalClicks, totalCollections, totalCreators },
-            topCreators,
-            topProducts: topProducts.map(p => ({ id: p.id, name: p.name, imageUrl: p.imageUrls[0], features: p._count.collections }))
-        });
-    } catch (error) {
-        server.log.error(error);
-        reply.code(500).send({ message: "Error fetching brand overview" });
-    }
-});
-// GET /brands/:brandId/campaigns
-server.get('/brands/:brandId/campaigns', async (request, reply) => {
-    const { brandId } = request.params as { brandId: string };
-    const campaigns = await prisma.campaign.findMany({
-        where: { brandId },
-        include: { _count: { select: { products: true,}}},
-        orderBy: { createdAt: 'desc' }
-    });
-    reply.send(campaigns);
-});
-
-// GET /brands/:brandId/products/performance
-server.get('/brands/:brandId/products/performance', async (request, reply) => {
-    const { brandId } = request.params as { brandId: string };
-    const products = await prisma.product.findMany({
-        where: { brandId },
-        include: { _count: { select: { collections: true, clicks: true } } },
-        orderBy: { collections: { _count: 'desc' } }
-    });
-    reply.send(products.map(p => ({
-        id: p.id,
-        name: p.name,
-        imageUrl: p.imageUrls[0],
-        features: p._count.collections,
-        clicks: p._count.clicks,
-    })));
-});
-
-// GET /brands/:brandId/creators
-server.get('/brands/:brandId/creators', async (request, reply) => {
-    const { brandId } = request.params as { brandId: string };
-    const collections = await prisma.collection.findMany({
-        where: { products: { some: { product: { brandId } } } },
-        include: { user: { include: { _count: { select: { followers: true } } } } }
-    });
-    
-    // Aggregate data by creator
-    const creatorMap = new Map();
-    for (const col of collections) {
-        if (!creatorMap.has(col.user.id)) {
-            creatorMap.set(col.user.id, {
-                id: col.user.id,
-                username: col.user.username,
-                profileImageUrl: col.user.profileImageUrl,
-                followers: col.user._count.followers,
-                collectionsCount: 0,
-            });
-        }
-        creatorMap.get(col.user.id).collectionsCount++;
-    }
-    
-    reply.send(Array.from(creatorMap.values()));
-});
 
 // --- ENHANCED SERVER START FUNCTION ---
 const start = async () => {
