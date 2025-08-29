@@ -549,36 +549,10 @@ try {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 server.post('/users/:creatorId/follow', async (request, reply) => {
 const { creatorId } = request.params as { creatorId: string };
 const { userId } = request.body as { userId: string }; // The user who is doing the following
  if (!userId) return reply.code(400).send({ message: "User ID is required." });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 try {
@@ -600,37 +574,10 @@ try {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 server.delete('/users/:creatorId/unfollow', async (request, reply) => {
 const { creatorId } = request.params as { creatorId: string };
 const { userId } = request.body as { userId: string };
  if (!userId) return reply.code(400).send({ message: "User ID is required." });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 try {
@@ -1279,14 +1226,33 @@ try {
 
 
 
-
-
-
-
-
-
-
-
+// ++ NEW ENDPOINT: Get categories for a campaign ++
+server.get('/public/campaigns/:campaignId/categories', async (request, reply) => {
+    const { campaignId } = request.params as { campaignId: string };
+    try {
+        // This query finds all categories that are associated with products within the given campaign.
+        const categories = await prisma.category.findMany({
+            where: {
+                products: {
+                    some: {
+                        product: {
+                            campaigns: {
+                                some: {
+                                    campaignId: campaignId,
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            select: { id: true, name: true }
+        });
+        reply.send(categories);
+    } catch (error) {
+        server.log.error(error);
+        reply.code(500).send({ message: "Error fetching categories for campaign" });
+    }
+});
 
 
 
@@ -1294,7 +1260,7 @@ try {
 
 // --- PUBLIC & UNIVERSAL ROUTES ---
 server.get('/products/search', async (request, reply) => {
-    const { q, brandId, campaignId } = request.query as { q?: string, brandId?: string, campaignId?: string };
+    const { q, brandId, campaignId } = request.query as { q?: string, brandId?: string, campaignId?: string, categoryId?: string };
     try {
         const whereClause: any = {
             name: {
@@ -1315,6 +1281,10 @@ server.get('/products/search', async (request, reply) => {
             }
           };
         }
+        if (categoryId) { // <-- ADD THIS LOGIC
+            whereClause.categories = { some: { categoryId: categoryId } };
+        }
+        
   
         const products = await prisma.product.findMany({
             where: whereClause,

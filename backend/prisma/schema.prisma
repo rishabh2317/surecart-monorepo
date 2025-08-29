@@ -56,11 +56,13 @@ model Product {
   brandId         String?
   price           Float?
   currency        String?
+  category        String?
   lastUpdatedAt   DateTime            @default(now()) @updatedAt
   clicks          Click[]
   collections     CollectionProduct[]
   brand           Brand?              @relation(fields: [brandId], references: [id])
   campaigns       CampaignProduct[] 
+  categories      ProductCategory[]
   @@index([name, description])
 }
 model Campaign {
@@ -82,6 +84,21 @@ model CampaignProduct {
   product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@id([campaignId, productId])
+}
+model Category {
+  id       String            @id @default(uuid())
+  name     String            @unique
+  products ProductCategory[]
+}
+
+// ++ NEW JOIN TABLE: ProductCategory ++
+model ProductCategory {
+  productId  String
+  categoryId String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([productId, categoryId])
 }
 
 model Collection {
