@@ -322,7 +322,7 @@ export default function PublicCollectionPage() {
                             <div className="flex-grow">
                                 <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">{collection.name}</h1>
                                 <p className="mt-1 text-slate-600">
-                                    A collection by <span className="font-semibold text-teal-600">{collection.author}</span>
+                                    A collection by 
                                     <Link href={`/${collection.author}`} className="font-semibold text-teal-600 hover:underline">
                                         {collection.author}
                                     </Link>
