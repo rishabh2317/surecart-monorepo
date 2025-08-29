@@ -10,6 +10,7 @@ datasource db {
 model User {
   id              String           @id @default(uuid())
   authProviderId  String           @unique
+  password          String?
   username        String           @unique
   email           String           @unique
   profileImageUrl String?
@@ -19,7 +20,9 @@ model User {
   fullName        String?
   instagramHandle String?
   phone           String?
-  brands          Brand[]
+  brands            Brand[]   @relation("UserBrands")
+  brandId String? @unique 
+  brand             Brand?    @relation("BrandAccount", fields: [brandId], references: [id])
   collections     Collection[]
   views           CollectionView[]
   comments        Comment[]
@@ -40,7 +43,8 @@ model Brand {
   affiliateTag String?
   createdAt    DateTime  @default(now())
   userId       String?
-  user         User?     @relation(fields: [userId], references: [id])
+  user         User?      @relation("UserBrands", fields: [userId], references: [id])
+  brandUser    User?      @relation("BrandAccount")
   products     Product[]
   campaigns    Campaign[]
 }

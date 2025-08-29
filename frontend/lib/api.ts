@@ -60,8 +60,10 @@ export const deleteCollection = (collectionId: string) => {
         method: 'DELETE',
     });
 };
-
-export const searchProducts = (query: string, brandId: string | null, campaignId: string | null) => {
+export const getCampaignCategories = (campaignId: string) => {
+    return fetcher(`/public/campaigns/${campaignId}/categories`);
+};
+export const searchProducts = (query: string, brandId: string | null, campaignId: string | null, categoryId: string | null) => {
     const params = new URLSearchParams({ q: query });
     if (brandId) {
         params.append('brandId', brandId);
@@ -69,6 +71,8 @@ export const searchProducts = (query: string, brandId: string | null, campaignId
     if (campaignId) { // <-- Add campaignId to params if it exists
         params.append('campaignId', campaignId);
     }
+    if (categoryId) params.append('categoryId', categoryId);
+    
     return fetcher(`/products/search?${params.toString()}`);
 };
 

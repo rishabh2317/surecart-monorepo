@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo, Suspense } from 'react'; // Import Suspense
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { createCollection, searchProducts, getCampaigns, getBrands } from '@/lib/api';
+import { createCollection, searchProducts, getCampaigns, getBrands, getCampaignCategories } from '@/lib/api';
 import { useRouter, useSearchParams } from 'next/navigation'; // Import useSearchParams
 import { getUserSession } from '@/lib/auth';
 import CreatorPageHeader from '@/components/creator/CreatorPageHeader';
@@ -16,6 +16,7 @@ interface Product { id: string; name: string; brand: string; imageUrl: string; }
 interface User { id: string; username: string; email: string; }
 interface Brand { id: string; name: string; }
 interface Campaign { id: string; name: string; description: string; coverImageUrl: string; brand: { name: string } }
+interface Category { id: string; name: string; }
 
 // --- Sub-Components ---
 const CampaignCard = ({ campaign, onClick }: { campaign: Campaign, onClick: () => void }) => (
@@ -45,10 +46,11 @@ function NewCollectionPageComponent() {
   const [showModal, setShowModal] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const [view, setView] = useState<'campaigns' | 'products'>('campaigns');
+  const [view, setView] = useState<'campaigns' | 'categories' | 'products'>('campaigns');
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
+  
 
   useEffect(() => {
     const sessionUser = getUserSession();
@@ -76,10 +78,15 @@ function NewCollectionPageComponent() {
       queryKey: ['campaigns'], 
       queryFn: getCampaigns 
   });
+  const { data: categories = [], isLoading: isLoadingCategories } = useQuery<Category[]>({
+    queryKey: ['categories', selectedCampaign?.id],
+    queryFn: () => getCampaignCategories(selectedCampaign!.id),
+    enabled: !!selectedCampaign,
+});
 
   const { data: availableProducts = [], isLoading: isLoadingProducts } = useQuery({
     queryKey: ['products', searchTerm, selectedBrand, selectedCampaign?.id],
-    queryFn: () => searchProducts(searchTerm, selectedBrand, selectedCampaign?.id || null),
+    queryFn: () => searchProducts(searchTerm, selectedBrand, selectedCampaign?.id || null, selectedCategory?.id || null),
     enabled: view === 'products' || searchTerm.length > 0, 
   });
 
@@ -100,16 +107,25 @@ function NewCollectionPageComponent() {
   // (Your handleCoverImageUpload, handleSave, toggleProductSelection, etc. functions remain here unchanged)
   // ...
 // --- Event Handlers ---
+
+
 const handleCampaignClick = (campaign: Campaign) => {
   setSelectedCampaign(campaign);
   setView('products');
 };
+const handleCategoryClick = (category: Category) => {
+  setSelectedCategory(category);
+  setView('products');
+};
 
-
-const handleBackToCampaigns = () => {
-  setView('campaigns');
-  setSelectedCampaign(null);
-  setSearchTerm('');
+const handleBack = () => {
+  if (view === 'products') {
+      setView('categories');
+      setSelectedCategory(null);
+  } else if (view === 'categories') {
+      setView('campaigns');
+      setSelectedCampaign(null);
+  }
 };
 // When a search is performed, always switch to the products view
 useEffect(() => {
@@ -252,51 +268,60 @@ const sortedAvailableProducts = useMemo(() => {
  
         {/* --- RIGHT COLUMN: PRODUCT SELECTION (Redesigned) --- */}
         <aside className="w-full md:w-1/2 bg-white border-l border-slate-200 p-4 flex flex-col md:overflow-y-auto">
-                    <div className="sticky top-0 bg-white pt-2 pb-4 z-10">
-                        <div className="flex items-center mb-4">
-                            {view === 'products' && (
-                                <button onClick={handleBackToCampaigns} className="mr-3 p-2 text-slate-500 hover:bg-slate-100 rounded-full">
-                                    <ArrowLeft className="w-5 h-5" />
-                                </button>
-                            )}
-                             <h3 className="font-bold text-slate-800 text-lg">
-                                {view === 'campaigns' ? 'Start with a Campaign' : (selectedCampaign ? selectedCampaign.name : 'All Products')} ({selectedProducts.length} selected)
-                            </h3>
-                        </div>
-                        <div className="relative">
-                            <input type="search" placeholder="Or search all products..." className="w-full pl-10 pr-4 py-2 border rounded-lg" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
-                            <Search className="w-5 h-5 text-slate-400 absolute top-1/2 left-3 -translate-y-1/2" />
-                        </div>
-                    </div>
+        <div className="sticky top-0 bg-white pt-2 pb-4 z-10">
+                <div className="flex items-center mb-4">
+                    {view !== 'campaigns' && (
+                        <button onClick={handleBack} className="mr-3 p-2 text-slate-500 hover:bg-slate-100 rounded-full">
+                            <ArrowLeft className="w-5 h-5" />
+                        </button>
+                    )}
+                    <h3 className="font-bold text-slate-800 text-lg truncate">
+                        {view === 'campaigns' && 'Start with a Campaign'}
+                        {view === 'categories' && selectedCampaign?.name}
+                        {view === 'products' && `${selectedCampaign?.name} > ${selectedCategory?.name || 'All Products'}`}
+                    </h3>
+                </div>
+                <div className="relative">
+                    <input type="search" placeholder="Or search all products..." className="w-full pl-10 pr-4 py-2 border rounded-lg" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                    <Search className="w-5 h-5 text-slate-400 absolute top-1/2 left-3 -translate-y-1/2" />
+                </div>
+            </div>
  
  
                     <div className="flex-grow overflow-y-auto">
-                        {view === 'campaigns' ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
-                                {/* Default Affiliate Campaigns */}
-                           
-                               
-                                {campaigns.map((campaign) => (
-                                    <CampaignCard key={campaign.id} campaign={campaign} onClick={() => handleCampaignClick(campaign)} />
-                                ))}
-                            </div>
-                        ) : (
-                             <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-                                {isLoadingProducts ? <p>Loading products...</p> : sortedAvailableProducts.map((product: Product) => {
-                                    const isSelected = selectedProducts.some(p => p.id === product.id);
-                                    return (
-                                        <div key={product.id} onClick={() => toggleProductSelection(product)} className={`p-2 border rounded-lg cursor-pointer relative ${isSelected ? 'border-teal-500 ring-2 ring-teal-500' : 'border-slate-200'}`}>
-                                            {isSelected && <div className="absolute top-1 right-1 bg-teal-500 text-white rounded-full p-0.5"><Check className="w-3 h-3" /></div>}
-                                            <div className="aspect-square bg-slate-100 rounded-md overflow-hidden mb-2"><img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" /></div>
-                                            <p className="font-semibold text-sm text-slate-800 truncate">{product.name}</p>
-                                            <p className="text-xs text-slate-500">{product.brand}</p>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
+                    {view === 'campaigns' && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
+                        {isLoadingCampaigns ? <p>Loading campaigns...</p> : campaigns.map((campaign) => (
+                            <CampaignCard key={campaign.id} campaign={campaign} onClick={() => handleCampaignClick(campaign)} />
+                        ))}
                     </div>
-                </aside>
+                )}
+                {view === 'categories' && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
+                        {isLoadingCategories ? <p>Loading categories...</p> : categories.map((cat) => (
+                            <button key={cat.id} onClick={() => handleCategoryClick(cat)} className="p-4 bg-slate-100 rounded-lg text-slate-700 font-semibold hover:bg-teal-100 hover:text-teal-700 text-center">
+                                {cat.name}
+                            </button>
+                        ))}
+                    </div>
+                )}
+                 {view === 'products' && (
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                        {isLoadingProducts ? <p>Loading products...</p> : sortedAvailableProducts.map((product: Product) => {
+                            const isSelected = selectedProducts.some(p => p.id === product.id);
+                            return (
+                                <div key={product.id} onClick={() => toggleProductSelection(product)} className={`p-2 border rounded-lg cursor-pointer relative ${isSelected ? 'border-teal-500 ring-2 ring-teal-500' : 'border-slate-200'}`}>
+                                    {isSelected && <div className="absolute top-1 right-1 bg-teal-500 text-white rounded-full p-0.5"><Check className="w-3 h-3" /></div>}
+                                    <div className="aspect-square bg-slate-100 rounded-md overflow-hidden mb-2"><img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" /></div>
+                                    <p className="font-semibold text-sm text-slate-800 truncate">{product.name}</p>
+                                    <p className="text-xs text-slate-500">{product.brand}</p>
+                                </div>
+                            );
+                        })}
+                        </div>
+                )}
+            </div>
+        </aside>
       </div>
     </div>
   );

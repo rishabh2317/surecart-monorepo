@@ -6,6 +6,7 @@ import bcrypt from 'bcrypt';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
+import { hashPassword, verifyPassword } from './auth.js';
 dotenv.config();
 
 
@@ -266,10 +267,16 @@ try {
     if (!user) return reply.code(401).send({ message: 'Invalid credentials.' });
     const match = await bcrypt.compare(password, user.authProviderId);
     if (!match) return reply.code(401).send({ message: 'Invalid credentials.' });
+    const userWithBrand = await prisma.user.findUnique({
+        where: { id: user.id },
+        include: { brand: true } 
+    });
     const { authProviderId, ...userResponse } = user;
     reply.send(userResponse);
 } catch (error) { server.log.error(error); reply.code(500).send({ message: 'Server error.' }); }
 });
+
+
 // POST /auth/social
 server.post('/auth/social', async (request, reply) => {
 const { email, username, authProviderId, profileImageUrl } = request.body as any;
@@ -1164,57 +1171,15 @@ try {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
     // Calculate the wallet balance from approved transactions
     const balance = transactions
         .filter(t => t.status === 'APPROVED')
         .reduce((sum, t) => sum + t.amount, 0);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     const wallet = {
         balance: balance,
         currency: 'INR'
     };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     reply.send({ wallet, coupons, transactions });
@@ -1339,6 +1304,76 @@ try {
     reply.code(500).send({ message: "Error fetching brands" });
 }
 });
+
+// in backend/src/server.ts, create or update the brand registration endpoint
+server.post('/auth/brand/register', async (request, reply) => {
+    const { brandName, email, password, website } = request.body as any;
+    
+    try {
+        // Check if a user with this email already exists
+        const existingUser = await prisma.user.findUnique({ where: { email } });
+        if (existingUser) {
+            return reply.code(409).send({ message: "A user with this email already exists." });
+        }
+        
+        // 1. Create the Brand first
+        const newBrand = await prisma.brand.create({
+            data: { 
+                name: brandName, 
+                websiteUrl: website 
+            }
+        });
+
+        // 2. Create the User with the BRAND role and link it to the new Brand
+        const hashedPassword = await hashPassword(password);
+        const newUser = await prisma.user.create({
+            data: {
+                email,
+                password: hashedPassword,
+                role: 'BRAND',
+                username: brandName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + Math.random().toString(36).substring(7), // Create a unique username
+                fullName: brandName,
+                brandId: newBrand.id // Link the user to the brand
+            }
+        });
+        
+        // 3. Return the newly created user (without password)
+        const { password: _, ...userWithoutPassword } = newUser;
+        reply.code(201).send(userWithoutPassword);
+
+    } catch (error) {
+        server.log.error({ err: error, msg: "Error during brand registration" });
+        reply.code(500).send({ message: "Internal server error during brand registration." });
+    }
+});
+server.post('/auth/login', async (request, reply) => {
+    const { email, password } = request.body as any;
+    try {
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (!user || !user.password) {
+            return reply.code(401).send({ message: "Invalid credentials" });
+        }
+        const isValid = await verifyPassword(password, user.password);
+        if (!isValid) {
+            return reply.code(401).send({ message: "Invalid credentials" });
+        }
+
+        // THIS IS THE CRITICAL MODIFICATION
+        // We now fetch the user again, but this time we include the 'brand' relation
+        const userWithBrand = await prisma.user.findUnique({
+            where: { id: user.id },
+            include: { brand: true } 
+        });
+
+        const { password: _, ...userWithoutPassword } = userWithBrand!;
+        reply.send(userWithoutPassword);
+
+    } catch (error) {
+        server.log.error(error);
+        reply.code(500).send({ message: "Error during login" });
+    }
+});
+
 // NEW: This powers the Pinterest-style infinite feed on the homepage
 server.get('/public/home', async (request: FastifyRequest, reply: FastifyReply) => {
 try {
@@ -1460,8 +1495,106 @@ return reply
     .send();
 });
 
+// GET /brands/:brandId/dashboard/overview
+server.get('/brands/:brandId/dashboard/overview', async (request, reply) => {
+    const { brandId } = request.params as { brandId: string };
+    try {
+        const productIds = (await prisma.product.findMany({ where: { brandId }, select: { id: true }})).map(p => p.id);
 
+        const totalClicks = await prisma.click.count({ where: { productId: { in: productIds } } });
+        const collections = await prisma.collection.findMany({
+            where: { products: { some: { productId: { in: productIds } } } },
+            distinct: ['id'],
+            include: { user: true }
+        });
+        const totalCollections = collections.length;
+        const totalCreators = new Set(collections.map(c => c.userId)).size;
 
+        const topCreators = collections.reduce((acc, col) => {
+            const creator = acc.find(c => c.id === col.userId);
+            if (creator) {
+                creator.collectionsCount++;
+            } else {
+                acc.push({
+                    id: col.userId,
+                    username: col.user.username,
+                    profileImageUrl: col.user.profileImageUrl,
+                    collectionsCount: 1,
+                });
+            }
+            return acc;
+        }, [] as any[]).sort((a,b) => b.collectionsCount - a.collectionsCount).slice(0, 5);
+        
+        const topProducts = await prisma.product.findMany({
+            where: { id: { in: productIds } },
+            include: { _count: { select: { collections: true } } },
+            orderBy: { collections: { _count: 'desc' } },
+            take: 5
+        });
+
+        reply.send({
+            summary: { totalClicks, totalCollections, totalCreators },
+            topCreators,
+            topProducts: topProducts.map(p => ({ id: p.id, name: p.name, imageUrl: p.imageUrls[0], features: p._count.collections }))
+        });
+    } catch (error) {
+        server.log.error(error);
+        reply.code(500).send({ message: "Error fetching brand overview" });
+    }
+});
+// GET /brands/:brandId/campaigns
+server.get('/brands/:brandId/campaigns', async (request, reply) => {
+    const { brandId } = request.params as { brandId: string };
+    const campaigns = await prisma.campaign.findMany({
+        where: { brandId },
+        include: { _count: { select: { products: true,}}},
+        orderBy: { createdAt: 'desc' }
+    });
+    reply.send(campaigns);
+});
+
+// GET /brands/:brandId/products/performance
+server.get('/brands/:brandId/products/performance', async (request, reply) => {
+    const { brandId } = request.params as { brandId: string };
+    const products = await prisma.product.findMany({
+        where: { brandId },
+        include: { _count: { select: { collections: true, clicks: true } } },
+        orderBy: { collections: { _count: 'desc' } }
+    });
+    reply.send(products.map(p => ({
+        id: p.id,
+        name: p.name,
+        imageUrl: p.imageUrls[0],
+        features: p._count.collections,
+        clicks: p._count.clicks,
+    })));
+});
+
+// GET /brands/:brandId/creators
+server.get('/brands/:brandId/creators', async (request, reply) => {
+    const { brandId } = request.params as { brandId: string };
+    const collections = await prisma.collection.findMany({
+        where: { products: { some: { product: { brandId } } } },
+        include: { user: { include: { _count: { select: { followers: true } } } } }
+    });
+    
+    // Aggregate data by creator
+    const creatorMap = new Map();
+    for (const col of collections) {
+        if (!creatorMap.has(col.user.id)) {
+            creatorMap.set(col.user.id, {
+                id: col.user.id,
+                username: col.user.username,
+                profileImageUrl: col.user.profileImageUrl,
+                followers: col.user._count.followers,
+                collectionsCount: 0,
+            });
+        }
+        creatorMap.get(col.user.id).collectionsCount++;
+    }
+    
+    reply.send(Array.from(creatorMap.values()));
+});
 
 // --- ENHANCED SERVER START FUNCTION ---
 const start = async () => {
