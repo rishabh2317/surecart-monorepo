@@ -1474,6 +1474,7 @@ try {
         name: collection.name,
         description: collection.description,
         author: collection.user.username,
+        authorId: collection.user.id,
         authorAvatar: collection.user.profileImageUrl || `https://placehold.co/100x100/E2E8F0/475569?text=${collection.user.username.charAt(0).toUpperCase()}`,
         products: collection.products.map((cp: any) => {
             // THIS IS THE NEW LOGIC BLOCK YOU ASKED FOR

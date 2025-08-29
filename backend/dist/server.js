@@ -5,6 +5,7 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
+import crypto from 'crypto';
 dotenv.config();
 // Initialize server with better logging
 const server = Fastify({
@@ -29,6 +30,7 @@ const AI_API_CALL_LIMIT = 10; // Our own internal monthly limit
 const allowedOrigins = [
     'http://localhost:3000',
     'https://surecart-monorepo.vercel.app', // your deployed frontend
+    'https://www.mystash.shop',
 ];
 // register cors normally but DO NOT register extra server.options('*')
 server.register(cors, {
@@ -244,21 +246,32 @@ server.post('/login', async (request, reply) => {
 // POST /auth/social
 server.post('/auth/social', async (request, reply) => {
     const { email, username, authProviderId, profileImageUrl } = request.body;
+    const existingUser = await prisma.user.findUnique({ where: { email } });
     if (!email || !authProviderId || !username) {
         return reply.code(400).send({ message: "Email, username, and authProviderId are required." });
     }
     try {
-        const user = await prisma.user.upsert({
-            where: { email },
-            update: { authProviderId }, // Update auth provider ID if user exists
-            create: {
-                email,
-                username,
-                authProviderId,
-                profileImageUrl,
-                role: 'SHOPPER', // New social signups default to Shopper
-            },
-        });
+        const existingUser = await prisma.user.findUnique({ where: { email } });
+        let user;
+        let isNewUser = false;
+        if (existingUser) {
+            user = await prisma.user.update({
+                where: { email },
+                data: { authProviderId }, // Update the auth provider ID just in case
+            });
+        }
+        else {
+            user = await prisma.user.create({
+                data: {
+                    email,
+                    username,
+                    authProviderId,
+                    profileImageUrl,
+                    role: 'SHOPPER', // New social signups always default to Shopper
+                },
+            });
+            isNewUser = true; // This is a new user
+        }
         const { authProviderId: _, ...userResponse } = user;
         reply.send(userResponse);
     }
@@ -323,6 +336,57 @@ server.post('/brands/register', async (request, reply) => {
         server.log.error(error);
         reply.code(500).send({ message: 'An error occurred while submitting the application.' });
     }
+});
+// POST /auth/forgot-password
+server.post('/auth/forgot-password', async (request, reply) => {
+    const { email } = request.body;
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (user) {
+        // Generate a secure, random token
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+        const passwordResetExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minute expiry
+        await prisma.user.update({
+            where: { email },
+            data: { passwordResetToken, passwordResetExpires },
+        });
+        // --- THIS IS THE WORLD-CLASS "SIMULATED EMAIL" ---
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
+        // Instead of sending an email, we log the link to the console for the developer.
+        server.log.info(`
+        =====================================================
+        PASSWORD RESET LINK (for developer testing):
+        ${resetUrl}
+        =====================================================
+        `);
+    }
+    // We always send the same success message to prevent email enumeration attacks.
+    reply.send({ message: 'If a user with that email exists, a password reset link has been sent.' });
+});
+// POST /auth/reset-password
+server.post('/auth/reset-password', async (request, reply) => {
+    const { token, password } = request.body;
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+    const user = await prisma.user.findFirst({
+        where: {
+            passwordResetToken: hashedToken,
+            passwordResetExpires: { gt: new Date() },
+        }
+    });
+    if (!user) {
+        return reply.code(400).send({ message: 'Token is invalid or has expired.' });
+    }
+    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+    await prisma.user.update({
+        where: { id: user.id },
+        data: {
+            authProviderId: hashedPassword,
+            passwordResetToken: null,
+            passwordResetExpires: null,
+        }
+    });
+    reply.send({ message: 'Password has been successfully reset.' });
 });
 // GET /products/:productId
 server.get('/products/:productId', async (request, reply) => {
@@ -755,6 +819,24 @@ server.get('/brands/:brandId/dashboard', async (request, reply) => {
         reply.code(500).send({ message: "Error fetching brand dashboard" });
     }
 });
+server.get('/public/campaigns', async (request, reply) => {
+    try {
+        const campaigns = await prisma.campaign.findMany({
+            where: { isActive: true },
+            include: {
+                brand: {
+                    select: { name: true }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+        reply.send(campaigns);
+    }
+    catch (error) {
+        server.log.error(error);
+        reply.code(500).send({ message: "Error fetching campaigns" });
+    }
+});
 // GET /users/:userId/rewards
 // GET /users/:userId/rewards
 server.get('/users/:userId/rewards', async (request, reply) => {
@@ -782,23 +864,32 @@ server.get('/users/:userId/rewards', async (request, reply) => {
 });
 // --- PUBLIC & UNIVERSAL ROUTES ---
 server.get('/products/search', async (request, reply) => {
-    const { q, brandId } = request.query;
+    const { q, brandId, campaignId } = request.query;
     try {
-        const products = await prisma.product.findMany({
-            where: {
-                name: {
-                    contains: q || '',
-                    mode: 'insensitive',
-                },
-                // This is the FIX: Only add brandId to the query if it exists
-                ...(brandId && { brandId: brandId })
+        const whereClause = {
+            name: {
+                contains: q || '',
+                mode: 'insensitive',
             },
+        };
+        if (brandId) {
+            whereClause.brandId = brandId;
+        }
+        // ++ NEW LOGIC: Filter by campaign if campaignId is provided ++
+        if (campaignId) {
+            whereClause.campaigns = {
+                some: {
+                    campaignId: campaignId
+                }
+            };
+        }
+        const products = await prisma.product.findMany({
+            where: whereClause,
             include: { brand: true },
         });
         const response = products.map(p => ({
             id: p.id,
             name: p.name,
-            // This is the FIX: Safely access the brand name
             brand: p.brand?.name || 'Unknown Brand',
             imageUrl: p.imageUrls[0],
         }));
@@ -848,13 +939,15 @@ server.get('/public/home', async (request, reply) => {
             orderBy: { createdAt: 'desc' },
             include: {
                 user: { select: { username: true, profileImageUrl: true } },
-                products: { take: 1, orderBy: { displayOrder: 'asc' }, include: { product: { select: { imageUrls: true } } } }
+                products: { take: 1, orderBy: { displayOrder: 'asc' }, include: { product: { select: { imageUrls: true } } } },
+                _count: { select: { views: true } }
             }
         });
         const response = collections.map(c => ({
             id: c.id, name: c.name, slug: c.slug, author: c.user.username,
+            views: c._count.views,
             authorAvatar: c.user.profileImageUrl || `https://placehold.co/100x100/E2E8F0/475569?text=${c.user.username.charAt(0).toUpperCase()}`,
-            coverImage: c.coverImageUrl || c.products[0]?.product.imageUrls[0] || `https://placehold.co/400x300/cccccc/333333?text=${encodeURIComponent(c.name)}`
+            coverImage: c.coverImageUrl || c.products[0]?.product.imageUrls[0] || `https://placehold.co/400x300/cccccc/333333?text=${encodeURIComponent(c.name)}`,
         }));
         reply.send(response);
     }
@@ -900,9 +993,24 @@ server.get('/public/collections/:username/:slug', async (request, reply) => {
         if (!collection)
             return reply.code(404).send({ message: "Collection not found" });
         const publicCollection = {
-            id: collection.id, name: collection.name, description: collection.description,
-            author: collection.user.username, authorId: collection.user.id, authorAvatar: collection.user.profileImageUrl || `https://placehold.co/100x100/E2E8F0/475569?text=${collection.user.username.charAt(0).toUpperCase()}`,
-            products: collection.products.map(cp => ({ id: cp.product.id, name: cp.product.name, imageUrl: cp.product.imageUrls[0], brand: cp.product.brand?.name || "Brand", buyUrl: `/redirect?collectionId=${collection.id}&productId=${cp.product.id}&affiliateUrl=${encodeURIComponent(cp.product.baseUrl)}` }))
+            id: collection.id,
+            name: collection.name,
+            description: collection.description,
+            author: collection.user.username,
+            authorAvatar: collection.user.profileImageUrl || `https://placehold.co/100x100/E2E8F0/475569?text=${collection.user.username.charAt(0).toUpperCase()}`,
+            products: collection.products.map((cp) => {
+                // THIS IS THE NEW LOGIC BLOCK YOU ASKED FOR
+                const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001';
+                const affiliateUrlWithTag = cp.product.baseUrl + `?tag=surecart-21`; // Placeholder affiliate tag
+                //const buyUrl = `${backendUrl}/redirect?collectionId=${collection.id}&productId=${cp.product.id}&affiliateUrl=${encodeURIComponent(affiliateUrlWithTag)}`;
+                return {
+                    id: cp.product.id,
+                    name: cp.product.name,
+                    imageUrl: cp.product.imageUrls[0],
+                    brand: cp.product.brand?.name || "Brand",
+                    buyUrl: cp.product.baseUrl, // Use the correctly constructed URL
+                };
+            })
         };
         reply.send(publicCollection);
     }

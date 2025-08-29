@@ -106,7 +106,7 @@ const ProductCard = ({ product }: { product: any }) => {
                     <div className="mt-4 space-y-2">
                         <button 
                             onClick={() => setIsAiDrawerOpen(true)}
-                            className="w-full text-sm font-semibold text-teal-600 hover:text-teal-700 flex items-center justify-center space-x-2 py-2 bg-teal-50 rounded-lg hover:bg-teal-100"
+                            className="w-full text-sm font-semibold text-teal-600 hover:text-teal-100 flex items-center justify-center space-x-2 py-2 bg-teal-100 rounded-lg hover:bg-teal-50"
                         >
                             <Sparkles className="w-4 h-4" />
                             <span>AI Summary</span>
