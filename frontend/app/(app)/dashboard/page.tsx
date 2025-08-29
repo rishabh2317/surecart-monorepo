@@ -196,7 +196,7 @@ const CreatorDashboard = ({ user }: { user: any }) => {
 
             <div className="flex-grow grid grid-cols-3 gap-4 text-center border-t border-b py-4">
               <div><p className="font-bold text-xl text-slate-800">{col.likes.toLocaleString()}</p><p className="text-xs text-slate-500">Likes</p></div>
-              <div><p className="font-bold text-xl text-slate-800">{col.shares.toLocaleString()}</p><p className="text-xs text-slate-500">Shares</p></div>
+              <div><p className="font-bold text-xl text-slate-800">{col.views.toLocaleString()}</p><p className="text-xs text-slate-500">Views</p></div>
               <div><p className="font-bold text-xl text-slate-800">{col.clicks?.toLocaleString() || 'N/A'}</p><p className="text-xs text-slate-500">Clicks</p></div>
             </div>
 

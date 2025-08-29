@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { saveUserSession } from '@/lib/auth';
-import { User, Instagram, Phone, UploadCloud } from 'lucide-react';
+import { User, Instagram, Phone, UploadCloud, Loader2 } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/config';
 
 
@@ -13,11 +13,13 @@ export default function OnboardingPage() {
   const router = useRouter();
   const { user, updateUserSession } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); 
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!user) { router.push('/login'); return; }
+    setIsSubmitting(true);
 
     const profileData = {
         fullName: (e.currentTarget.elements.namedItem('name') as HTMLInputElement).value,
@@ -36,9 +38,10 @@ export default function OnboardingPage() {
         if (!res.ok) throw new Error("Failed to upgrade profile.");
         const updatedUser = await res.json();
         updateUserSession(updatedUser); 
-        alert('Profile complete! Welcome to your creator dashboard.');
+        //alert('Profile complete! Welcome to your creator dashboard.');
         router.push('/dashboard');
-    } catch (error: any) { alert(`Error: ${error.message}`); }
+    } catch (error: any) { alert(`Error: ${error.message}`);
+    setIsSubmitting(false);  }
   };
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -103,8 +106,8 @@ export default function OnboardingPage() {
         <textarea name="bio" rows={3} className="block w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg placeholder-slate-600" placeholder="Tell your audience a little about yourself..."></textarea>
     </div>
 </div>
-          <button type="submit" className="w-full flex justify-center py-3 px-4 rounded-lg shadow-sm text-sm font-medium text-white bg-teal-500 hover:bg-teal-600">
-            Go to Dashboard
+          <button type="submit" disabled={isUploading || isSubmitting} className="w-full flex justify-center py-3 px-4 rounded-lg shadow-sm text-sm font-medium text-white bg-teal-500 hover:bg-teal-600">
+          {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Go to Dashboard'}
           </button>
         </form>
       </div>

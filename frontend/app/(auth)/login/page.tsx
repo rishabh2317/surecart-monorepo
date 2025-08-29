@@ -27,6 +27,8 @@ function LoginComponent() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState('');
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // New state for form submission
+
 
   useEffect(() => {
     if (user && user.role === 'SHOPPER' && searchParams.get('action') === 'signup') {
@@ -40,6 +42,7 @@ function LoginComponent() {
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
     try {
       if (isSignUp) {
         // Get the role from the URL, defaulting to 'CREATOR' if not present
@@ -48,7 +51,8 @@ function LoginComponent() {
       } else {
         await login(email, password);
       }
-    } catch (err: any) { setError(err.message); }
+    } catch (err: any) { setError(err.message);
+      setIsLoading(false); }
   };
 
   const handleGoogleSignIn = async () => {
@@ -97,7 +101,7 @@ function LoginComponent() {
                 <input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="mt-1 block w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg" /></div>
                 {error && <p className="text-sm text-red-600">{error}</p>}
                 
-                <button type="submit" className="w-full py-3 px-4 rounded-lg text-white font-semibold bg-teal-500 hover:bg-teal-600">{isSignUp ? 'Create Account' : 'Sign In'}</button>
+                <button type="submit" disabled={isLoading} className="w-full py-3 px-4 rounded-lg text-white font-semibold bg-teal-500 hover:bg-teal-600">{isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (isSignUp ? 'Create Account' : 'Sign In')}</button>
             </form>
         </div>
         <div className="text-center mt-6"><button onClick={() => setIsSignUp(!isSignUp)} className="text-sm font-medium text-teal-600 hover:underline">{isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}</button></div>

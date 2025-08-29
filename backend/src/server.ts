@@ -830,20 +830,6 @@ try {
 });
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // POST /products/ask-ai
 server.post('/products/ask-ai', async (request, reply) => {
 const { productName } = request.body as { productName: string };
@@ -915,48 +901,24 @@ const { userId } = request.params as { userId: string };
 try {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return reply.code(404).send({ message: "User not found" });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     const collections = await prisma.collection.findMany({
         where: { userId },
-        include: { _count: { select: { products: true, likedBy: true } } }
+        include: { _count: { select: { products: true, likedBy: true, views: true,     // <-- Fetch real view count
+        clicks: true } } }
     });
     const responseData = collections.map(c => ({
         id: c.id, name: c.name, slug: c.slug,
         productsCount: c._count.products,
         likes: c._count.likedBy,
-        shares: Math.floor(Math.random() * 100), // Simulated for now
+        views: c._count.views, // <-- Pass real view count
+        clicks: c._count.clicks, // <-- Pass real click count
+        // A realistic simulated share count based on other metrics
+        shares: Math.floor((c._count.views / 20) + (c._count.likedBy * 2)),
         username: user.username,
     }));
     reply.send({ collections: responseData });
 } catch (error) { reply.code(500).send({ message: "Error fetching dashboard data" }); }
 });
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

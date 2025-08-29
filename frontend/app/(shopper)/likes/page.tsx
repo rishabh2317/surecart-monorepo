@@ -86,7 +86,7 @@ export default function LikedCollectionsPage() {
 
     return (
         <div className="container mx-auto p-8">
-            <h1 className="text-3xl font-bold text-slate-900 mb-6">My Liked Collections</h1>
+            <h1 className="text-xl text-slate-900 mb-6">My Liked Collections</h1>
             {likedCollections.length > 0 ? (
                 <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-4">
                     {likedCollections.map((collection: any) => (

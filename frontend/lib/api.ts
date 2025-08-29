@@ -94,4 +94,26 @@ export const getProductDetails = (productId: string) => {
 export const getCampaigns = () => {
     return fetcher('/public/campaigns');
 };
+export const followCreator = async ({ creatorId, userId }: { creatorId: string, userId: string }) => {
+    return fetcher(`/users/${creatorId}/follow`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+    });
+};
 
+export const unfollowCreator = async ({ creatorId, userId }: { creatorId: string, userId: string }) => {
+    // Note: DELETE requests might not have a body, but we'll return a simple true on success
+    await fetcher(`/users/${creatorId}/unfollow`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+    });
+    return true;
+};
+
+export const getFollowStatus = (creatorId: string, userId: string) => {
+    // This check prevents the API call if IDs are not ready
+    if (!creatorId || !userId) return Promise.resolve({ isFollowing: false });
+    return fetcher(`/users/${userId}/follow-status/${creatorId}`);
+};

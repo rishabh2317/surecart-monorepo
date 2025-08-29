@@ -1,11 +1,11 @@
 // app/[username]/page.tsx
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'; // Import query hooks
 import { useParams, notFound } from 'next/navigation';
-import { getCreatorProfile } from '@/lib/api';
+import { getCreatorProfile, getFollowStatus, followCreator, unfollowCreator } from '@/lib/api'; // Import new API functions
 import Link from 'next/link';
-import { UserPlus, Heart } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useState, useEffect } from 'react';
 
@@ -31,7 +31,7 @@ const CollectionCard = ({ collection }: { collection: any }) => (
 export default function CreatorProfilePage() {
     const params = useParams();
     const { user, openAuthModal } = useAuth();
-    const [isFollowing, setIsFollowing] = useState(false);
+    const queryClient = useQueryClient();
     const username = params.username as string;
 
     const { data: creator, isLoading, isError } = useQuery({
@@ -39,14 +39,41 @@ export default function CreatorProfilePage() {
         queryFn: () => getCreatorProfile(username),
         enabled: !!username,
     });
+    
+    // --- START: NEW "SMART" FOLLOW LOGIC ---
+    const { data: followStatus } = useQuery({
+        queryKey: ['followStatus', creator?.id, user?.id],
+        queryFn: () => getFollowStatus(creator!.id, user!.id),
+        enabled: !!user && !!creator,
+    });
 
-    // Note: The follow/unfollow logic would be added here
+    const isFollowing = followStatus?.isFollowing ?? false;
+
+    const followMutation = useMutation({
+        mutationFn: followCreator,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['followStatus', creator?.id, user?.id] });
+            queryClient.invalidateQueries({ queryKey: ['creatorProfile', username] }); // Refreshes follower count
+        },
+    });
+
+    const unfollowMutation = useMutation({
+        mutationFn: unfollowCreator,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['followStatus', creator?.id, user?.id] });
+            queryClient.invalidateQueries({ queryKey: ['creatorProfile', username] }); // Refreshes follower count
+        },
+    });
+    
     const handleFollow = () => {
         if (!user) {
             openAuthModal();
-        } else {
-            // Placeholder for follow/unfollow mutation
-            setIsFollowing(!isFollowing);
+        } else if (creator) {
+            if (isFollowing) {
+                unfollowMutation.mutate({ creatorId: creator.id, userId: user.id });
+            } else {
+                followMutation.mutate({ creatorId: creator.id, userId: user.id });
+            }
         }
     };
 
@@ -61,6 +88,8 @@ export default function CreatorProfilePage() {
     if (isError || !creator) {
         return notFound();
     }
+    const isFollowActionPending = followMutation.isPending || unfollowMutation.isPending;
+
 
     return (
         <div className="bg-white">
@@ -96,7 +125,15 @@ export default function CreatorProfilePage() {
                         </div>
 
                         <div className="mt-6">
-                            <button onClick={handleFollow} className={`flex items-center justify-center mx-auto space-x-2 px-6 py-3 font-semibold rounded-full transition-colors ${isFollowing ? 'bg-slate-200 text-slate-800' : 'bg-teal-500 text-white hover:bg-teal-600'}`}>
+                        <button 
+                                onClick={handleFollow} 
+                                disabled={isFollowActionPending}
+                                className={`flex items-center justify-center mx-auto space-x-2 px-6 py-3 font-semibold rounded-full transition-colors w-32 ${
+                                    isFollowing 
+                                        ? 'bg-slate-200 text-slate-800' 
+                                        : 'bg-teal-500 text-white hover:bg-teal-600'
+                                } disabled:bg-slate-300`}
+                            >
                                 <UserPlus className="w-5 h-5" />
                                 <span>{isFollowing ? 'Following' : 'Follow'}</span>
                             </button>

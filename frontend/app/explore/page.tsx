@@ -38,7 +38,7 @@ const LikedCollectionsSection = ({ userId }: { userId: string }) => {
     if (isLoading || likedCollections.length === 0) return null;
     return (
         <section className="mb-12">
-            <div className="flex items-center space-x-3 mb-6"><Heart className="w-7 h-7 text-red-500" /><h3 className="text-2xl text-slate-900">Your Liked Collections</h3></div>
+            <div className="flex items-center space-x-3 mb-6"><Heart className="w-7 h-7 text-red-500" /><h3 className="text-xl text-slate-900">Your Liked Collections</h3></div>
             <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-4">{likedCollections.map((col: any) => <CollectionCard key={col.id} collection={col} />)}</div>
         </section>
     );
