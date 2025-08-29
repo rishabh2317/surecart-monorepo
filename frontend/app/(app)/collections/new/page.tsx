@@ -48,6 +48,7 @@ function NewCollectionPageComponent() {
 
   const [view, setView] = useState<'campaigns' | 'categories' | 'products'>('campaigns');
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
   
