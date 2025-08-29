@@ -6,7 +6,6 @@ import bcrypt from 'bcrypt';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
-import { hashPassword, verifyPassword } from './auth.js';
 dotenv.config();
 
 
