@@ -1225,7 +1225,7 @@ server.get('/public/campaigns/:campaignId/categories', async (request, reply) =>
 
 // --- PUBLIC & UNIVERSAL ROUTES ---
 server.get('/products/search', async (request, reply) => {
-    const { q, brandId, campaignId } = request.query as { q?: string, brandId?: string, campaignId?: string, categoryId?: string };
+    const { q, brandId, campaignId, categoryId } = request.query as { q?: string, brandId?: string, campaignId?: string, categoryId?: string };
     try {
         const whereClause: any = {
             name: {
@@ -1306,73 +1306,8 @@ try {
 });
 
 // in backend/src/server.ts, create or update the brand registration endpoint
-server.post('/auth/brand/register', async (request, reply) => {
-    const { brandName, email, password, website } = request.body as any;
-    
-    try {
-        // Check if a user with this email already exists
-        const existingUser = await prisma.user.findUnique({ where: { email } });
-        if (existingUser) {
-            return reply.code(409).send({ message: "A user with this email already exists." });
-        }
-        
-        // 1. Create the Brand first
-        const newBrand = await prisma.brand.create({
-            data: { 
-                name: brandName, 
-                websiteUrl: website 
-            }
-        });
 
-        // 2. Create the User with the BRAND role and link it to the new Brand
-        const hashedPassword = await hashPassword(password);
-        const newUser = await prisma.user.create({
-            data: {
-                email,
-                password: hashedPassword,
-                role: 'BRAND',
-                username: brandName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + Math.random().toString(36).substring(7), // Create a unique username
-                fullName: brandName,
-                brandId: newBrand.id // Link the user to the brand
-            }
-        });
-        
-        // 3. Return the newly created user (without password)
-        const { password: _, ...userWithoutPassword } = newUser;
-        reply.code(201).send(userWithoutPassword);
 
-    } catch (error) {
-        server.log.error({ err: error, msg: "Error during brand registration" });
-        reply.code(500).send({ message: "Internal server error during brand registration." });
-    }
-});
-server.post('/auth/login', async (request, reply) => {
-    const { email, password } = request.body as any;
-    try {
-        const user = await prisma.user.findUnique({ where: { email } });
-        if (!user || !user.password) {
-            return reply.code(401).send({ message: "Invalid credentials" });
-        }
-        const isValid = await verifyPassword(password, user.password);
-        if (!isValid) {
-            return reply.code(401).send({ message: "Invalid credentials" });
-        }
-
-        // THIS IS THE CRITICAL MODIFICATION
-        // We now fetch the user again, but this time we include the 'brand' relation
-        const userWithBrand = await prisma.user.findUnique({
-            where: { id: user.id },
-            include: { brand: true } 
-        });
-
-        const { password: _, ...userWithoutPassword } = userWithBrand!;
-        reply.send(userWithoutPassword);
-
-    } catch (error) {
-        server.log.error(error);
-        reply.code(500).send({ message: "Error during login" });
-    }
-});
 
 // NEW: This powers the Pinterest-style infinite feed on the homepage
 server.get('/public/home', async (request: FastifyRequest, reply: FastifyReply) => {
