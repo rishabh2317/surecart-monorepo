@@ -269,7 +269,7 @@ try {
     if (!match) return reply.code(401).send({ message: 'Invalid credentials.' });
     const userWithBrand = await prisma.user.findUnique({
         where: { id: user.id },
-        include: { brand: true } 
+        include: { brands: true } 
     });
     const { authProviderId, ...userResponse } = user;
     reply.send(userResponse);
