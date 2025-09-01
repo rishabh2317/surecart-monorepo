@@ -1185,6 +1185,18 @@ server.get('/public/campaigns/:campaignId/categories', async (request, reply) =>
     }
 });
 
+server.get('/public/categories', async (request, reply) => {
+    try {
+        const categories = await prisma.category.findMany({
+            orderBy: { name: 'asc' },
+            select: { id: true, name: true }
+        });
+        reply.send(categories);
+    } catch (error) {
+        server.log.error(error);
+        reply.code(500).send({ message: "Error fetching categories" });
+    }
+});
 
 
 

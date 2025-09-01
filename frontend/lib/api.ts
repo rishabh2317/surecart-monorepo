@@ -63,6 +63,9 @@ export const deleteCollection = (collectionId: string) => {
 export const getCampaignCategories = (campaignId: string) => {
     return fetcher(`/public/campaigns/${campaignId}/categories`);
 };
+export const getCategories = () => {
+    return fetcher(`/public/categories`);
+};
 export const searchProducts = (query: string, brandId: string | null, campaignId: string | null, categoryId: string | null) => {
     const params = new URLSearchParams({ q: query });
     if (brandId) {
@@ -72,7 +75,7 @@ export const searchProducts = (query: string, brandId: string | null, campaignId
         params.append('campaignId', campaignId);
     }
     if (categoryId) params.append('categoryId', categoryId);
-    
+
     return fetcher(`/products/search?${params.toString()}`);
 };
 

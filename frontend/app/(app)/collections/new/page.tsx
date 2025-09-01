@@ -72,6 +72,10 @@ function NewCollectionPageComponent() {
             description: '', coverImageUrl: '', brand: { name: '' }
         });
     }
+    else {
+      // This part handles the direct journey from the "New Collection" button
+      setView('categories');
+  }
   }, [searchParams]);
 
   const { data: brands = [] } = useQuery<Brand[]>({ queryKey: ['brands'], queryFn: getBrands });
@@ -86,7 +90,7 @@ function NewCollectionPageComponent() {
 });
 
   const { data: availableProducts = [], isLoading: isLoadingProducts } = useQuery({
-    queryKey: ['products', searchTerm, selectedBrand, selectedCampaign?.id],
+    queryKey: ['products', searchTerm, selectedBrand, selectedCampaign?.id, selectedCategory?.id],
     queryFn: () => searchProducts(searchTerm, selectedBrand, selectedCampaign?.id || null, selectedCategory?.id || null),
     enabled: view === 'products' || searchTerm.length > 0, 
   });
@@ -123,6 +127,7 @@ const handleBack = () => {
   if (view === 'products') {
       setView('categories');
       setSelectedCategory(null);
+      setSearchTerm('');
   } else if (view === 'categories') {
       setView('campaigns');
       setSelectedCampaign(null);
@@ -132,6 +137,7 @@ const handleBack = () => {
 useEffect(() => {
 if (searchTerm) {
     setView('products');
+    setSelectedCategory(null);
     setSelectedCampaign(null); // Clear campaign selection when searching
 }
 }, [searchTerm]);
@@ -271,15 +277,14 @@ const sortedAvailableProducts = useMemo(() => {
         <aside className="w-full md:w-1/2 bg-white border-l border-slate-200 p-4 flex flex-col md:overflow-y-auto">
         <div className="sticky top-0 bg-white pt-2 pb-4 z-10">
                 <div className="flex items-center mb-4">
-                    {view !== 'campaigns' && (
-                        <button onClick={handleBack} className="mr-3 p-2 text-slate-500 hover:bg-slate-100 rounded-full">
-                            <ArrowLeft className="w-5 h-5" />
-                        </button>
-                    )}
+                {view === 'products' && (
+                <button onClick={handleBack} className="mr-3 p-2 text-slate-500 hover:bg-slate-100 rounded-full">
+                    <ArrowLeft className="w-5 h-5" />
+                </button>
+            )}
                     <h3 className="font-bold text-slate-800 text-lg truncate">
-                        {view === 'campaigns' && 'Start with a Campaign'}
-                        {view === 'categories' && selectedCampaign?.name}
-                        {view === 'products' && `${selectedCampaign?.name} > ${selectedCategory?.name || 'All Products'}`}
+                    {view === 'categories' ? 'Select a Category' : selectedCategory?.name || 'Search Results'}
+                    <span className="font-normal text-slate-500"> ({selectedProducts.length} selected)</span>
                     </h3>
                 </div>
                 <div className="relative">
@@ -290,13 +295,6 @@ const sortedAvailableProducts = useMemo(() => {
  
  
                     <div className="flex-grow overflow-y-auto">
-                    {view === 'campaigns' && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
-                        {isLoadingCampaigns ? <p>Loading campaigns...</p> : campaigns.map((campaign) => (
-                            <CampaignCard key={campaign.id} campaign={campaign} onClick={() => handleCampaignClick(campaign)} />
-                        ))}
-                    </div>
-                )}
                 {view === 'categories' && (
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
                         {isLoadingCategories ? <p>Loading categories...</p> : categories.map((cat) => (
