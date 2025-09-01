@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo, Suspense } from 'react'; // Import Suspense
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { createCollection, searchProducts, getCampaigns, getBrands, getCampaignCategories } from '@/lib/api';
+import { createCollection, searchProducts, getCampaigns, getBrands, getCategories } from '@/lib/api';
 import { useRouter, useSearchParams } from 'next/navigation'; // Import useSearchParams
 import { getUserSession } from '@/lib/auth';
 import CreatorPageHeader from '@/components/creator/CreatorPageHeader';
@@ -83,10 +83,12 @@ function NewCollectionPageComponent() {
       queryKey: ['campaigns'], 
       queryFn: getCampaigns 
   });
-  const { data: categories = [], isLoading: isLoadingCategories } = useQuery<Category[]>({
-    queryKey: ['categories', selectedCampaign?.id],
-    queryFn: () => getCampaignCategories(selectedCampaign!.id),
-    enabled: !!selectedCampaign,
+  const { data: categories = [], isLoading: isLoadingCategories } = useQuery<Category[]>({ 
+    queryKey: ['categories'], 
+    queryFn: getCategories,
+    // THIS IS THE FIX: This now correctly enables the query on initial load
+    // for the category-first journey.
+    enabled: view === 'categories' && !selectedCampaign,
 });
 
   const { data: availableProducts = [], isLoading: isLoadingProducts } = useQuery({
