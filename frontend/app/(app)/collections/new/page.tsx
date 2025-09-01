@@ -300,7 +300,7 @@ const sortedAvailableProducts = useMemo(() => {
                 {view === 'categories' && (
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
                         {isLoadingCategories ? <p>Loading categories...</p> : categories.map((cat) => (
-                            <button key={cat.id} onClick={() => handleCategoryClick(cat)} className="p-4 bg-teal-100 rounded-lg text-slate-700 font-semibold hover:bg-teal-500 hover:text-teal-50 text-center">
+                            <button key={cat.id} onClick={() => handleCategoryClick(cat)} className="p-4 bg-teal-100 rounded-lg text-slate-500 font-semibold hover:bg-teal-500 hover:text-slate-100 text-center">
                                 {cat.name}
                             </button>
                         ))}
