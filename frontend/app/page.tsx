@@ -22,7 +22,7 @@ const CollectionCard = ({ collection }: { collection: any }) => (
           className="w-full rounded-2xl shadow-lg hover:shadow-xl transition-shadow"
         />
   
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl">
+  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent rounded-2xl transition-opacity duration-300 opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
           <div className="absolute bottom-0 left-0 p-4 w-full">
             <h3 className="font-bold text-white text-md leading-tight">
               {collection.name}

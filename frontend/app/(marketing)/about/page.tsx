@@ -41,7 +41,7 @@ export default function AboutPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
                     <div className="flex flex-col items-center">
                         <div className="relative">
-                            <div className="flex items-center justify-center h-32 w-32 rounded-full bg-teal-100">
+                            <div className="flex items-center justify-center h-32 w-32 rounded-full bg-teal-50">
                                 <Users className="w-12 h-12 text-teal-600" />
                             </div>
                         </div>
@@ -50,7 +50,7 @@ export default function AboutPage() {
                     </div>
                     <div className="flex flex-col items-center">
                         <div className="relative">
-                           <div className="flex items-center justify-center h-32 w-32 rounded-full bg-teal-100">
+                           <div className="flex items-center justify-center h-32 w-32 rounded-full bg-teal-50">
                                 <Layers className="w-12 h-12 text-teal-600" />
                             </div>
                         </div>
@@ -59,7 +59,7 @@ export default function AboutPage() {
                     </div>
                     <div className="flex flex-col items-center">
                         <div className="relative">
-                            <div className="flex items-center justify-center h-32 w-32 rounded-full bg-teal-100">
+                            <div className="flex items-center justify-center h-32 w-32 rounded-full bg-teal-50">
                                 <Heart className="w-12 h-12 text-teal-600" />
                             </div>
                         </div>
