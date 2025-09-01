@@ -3,7 +3,6 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-// ESM-friendly __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -12,11 +11,12 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Starting unified seeding process...");
 
-  // 1. Load data from JSON file
-  const rawData = fs.readFileSync(path.join(__dirname, "data.json"), "utf-8");
-  const productsData: any[] = JSON.parse(rawData);
+  // 1. Load JSON data
+  const categoriesData = JSON.parse(fs.readFileSync(path.join(__dirname, "categories.json"), "utf-8"));
+  const productsData = JSON.parse(fs.readFileSync(path.join(__dirname, "products.json"), "utf-8"));
+  const productCategoriesData = JSON.parse(fs.readFileSync(path.join(__dirname, "productCategories.json"), "utf-8"));
 
-  // 2. Create a default user for brand ownership
+  // 2. Default user
   const defaultUser = await prisma.user.upsert({
     where: { email: "default@system.com" },
     update: {},
@@ -30,40 +30,49 @@ async function main() {
   });
   console.log(`👤 Using default user: ${defaultUser.id}`);
 
-  // 3. Create Affiliate Campaigns (Amazon, Flipkart, Myntra)
-  const affiliateCampaigns = [];
+  // 3. Categories
+  for (const c of categoriesData) {
+    await prisma.category.upsert({
+      where: { id: c.id },
+      update: { name: c.name },
+      create: { id: c.id, name: c.name },
+    });
+  }
+  console.log(`📂 Inserted/updated ${categoriesData.length} categories.`);
+
+  // 4. Marketplace brand
+  const marketplaceBrand = await prisma.brand.upsert({
+    where: { name: "Marketplace" },
+    update: {},
+    create: { name: "Marketplace", userId: defaultUser.id },
+  });
+
+  // 5. Affiliate campaigns
   const affiliateData = [
     { id: "amazon", name: "Amazon Associates", cover: "https://placehold.co/600x400/FF9900/FFFFFF?text=Amazon" },
     { id: "flipkart", name: "Flipkart Affiliates", cover: "https://placehold.co/600x400/2874F0/FFFFFF?text=Flipkart" },
-    { id: "myntra", name: "Myntra Affiliates", cover: "https://placehold.co/600x400/E40046/FFFFFF?text=Myntra" }
+    { id: "myntra", name: "Myntra Affiliates", cover: "https://placehold.co/600x400/E40046/FFFFFF?text=Myntra" },
   ];
-
-  const marketplaceBrand = await prisma.brand.upsert({
-      where: { name: 'Marketplace' },
-      update: {},
-      create: { name: 'Marketplace', userId: defaultUser.id }
-  });
-
+  const affiliateCampaigns = [];
   for (const aff of affiliateData) {
-      const campaign = await prisma.campaign.upsert({
-          where: { id: aff.id },
-          update: {},
-          create: {
-              id: aff.id,
-              name: aff.name,
-              brandId: marketplaceBrand.id,
-              coverImageUrl: aff.cover,
-              description: `Top products from ${aff.name}`,
-              isActive: true
-          }
-      });
-      affiliateCampaigns.push(campaign);
-      console.log(`🛍️  Ensured campaign exists: ${campaign.name}`);
+    const campaign = await prisma.campaign.upsert({
+      where: { id: aff.id },
+      update: {},
+      create: {
+        id: aff.id,
+        name: aff.name,
+        brandId: marketplaceBrand.id,
+        coverImageUrl: aff.cover,
+        description: `Top products from ${aff.name}`,
+        isActive: true,
+      },
+    });
+    affiliateCampaigns.push(campaign);
+    console.log(`🛍️ Campaign ready: ${campaign.name}`);
   }
 
-  // 4. Process all products, brands, and link them to campaigns
+  // 6. Products
   for (const p of productsData) {
-    // Upsert Brand
     const brand = await prisma.brand.upsert({
       where: { name: p.brand?.name || "Unknown Brand" },
       update: {},
@@ -74,7 +83,6 @@ async function main() {
       },
     });
 
-    // Upsert Product
     const product = await prisma.product.upsert({
       where: { id: p.id },
       update: {},
@@ -92,24 +100,27 @@ async function main() {
       },
     });
 
-    // Link product to all affiliate campaigns
+    // Link to all affiliate campaigns
     for (const campaign of affiliateCampaigns) {
-        await prisma.campaignProduct.upsert({
-            where: {
-                campaignId_productId: {
-                    campaignId: campaign.id,
-                    productId: product.id,
-                }
-            },
-            update: {},
-            create: {
-                campaignId: campaign.id,
-                productId: product.id
-            }
-        });
+      await prisma.campaignProduct.upsert({
+        where: { campaignId_productId: { campaignId: campaign.id, productId: product.id } },
+        update: {},
+        create: { campaignId: campaign.id, productId: product.id },
+      });
     }
   }
-  console.log(`✅ Processed and linked ${productsData.length} products to campaigns.`);
+  console.log(`✅ Inserted/updated ${productsData.length} products.`);
+
+  // 7. Product-Category mapping
+  for (const pc of productCategoriesData) {
+    await prisma.productCategory.upsert({
+      where: { productId_categoryId: { productId: pc.productId, categoryId: pc.categoryId } },
+      update: {},
+      create: { productId: pc.productId, categoryId: pc.categoryId },
+    });
+  }
+  console.log(`🔗 Linked ${productCategoriesData.length} product-category relationships.`);
+
   console.log("🎯 Unified seeding complete!");
 }
 
