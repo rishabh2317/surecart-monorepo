@@ -34,11 +34,18 @@ async function main() {
   for (const c of categoriesData) {
     await prisma.category.upsert({
       where: { id: c.id },
-      update: { name: c.name },
-      create: { id: c.id, name: c.name },
+      update: {
+        name: c.name,
+        parentId: c.parentId || null,
+      },
+      create: {
+        id: c.id,
+        name: c.name,
+        parentId: c.parentId || null,
+      },
     });
   }
-  console.log(`📂 Inserted/updated ${categoriesData.length} categories.`);
+  console.log(`📂 Inserted/updated ${categoriesData.length} categories (with hierarchy).`);
 
   // 4. Marketplace brand
   const marketplaceBrand = await prisma.brand.upsert({

@@ -1188,8 +1188,22 @@ server.get('/public/campaigns/:campaignId/categories', async (request, reply) =>
 server.get('/public/categories', async (request, reply) => {
     try {
         const categories = await prisma.category.findMany({
+            where: {
+                // Only fetch top-level categories
+                parentId: null 
+            },
+            // THIS IS THE CORRECTED SECTION
+            select: { 
+                id: true, 
+                name: true, 
+                subCategories: {
+                    select: {
+                        id: true,
+                        name: true
+                    }
+                } 
+            },
             orderBy: { name: 'asc' },
-            select: { id: true, name: true }
         });
         reply.send(categories);
     } catch (error) {

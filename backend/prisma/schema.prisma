@@ -92,6 +92,9 @@ model CampaignProduct {
 model Category {
   id       String            @id @default(uuid())
   name     String            @unique
+  parentId  String?
+  parent    Category?  @relation("SubCategories", fields: [parentId], references: [id])
+  subCategories Category[] @relation("SubCategories")
   products ProductCategory[]
 }
 

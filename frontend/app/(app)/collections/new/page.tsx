@@ -7,7 +7,7 @@ import { createCollection, searchProducts, getCampaigns, getBrands, getCategorie
 import { useRouter, useSearchParams } from 'next/navigation'; // Import useSearchParams
 import { getUserSession } from '@/lib/auth';
 import CreatorPageHeader from '@/components/creator/CreatorPageHeader';
-import {Check, Copy, X, UploadCloud, Edit, Search, ArrowLeft } from 'lucide-react';
+import {Check, Copy, X, UploadCloud, Edit, Search, ArrowLeft, ChevronDown, ChevronRight} from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/lib/config';
 
@@ -16,7 +16,11 @@ interface Product { id: string; name: string; brand: string; imageUrl: string; }
 interface User { id: string; username: string; email: string; }
 interface Brand { id: string; name: string; }
 interface Campaign { id: string; name: string; description: string; coverImageUrl: string; brand: { name: string } }
-interface Category { id: string; name: string; }
+interface Category {
+  id: string;
+  name: string;
+  subCategories?: Category[];
+}
 
 // --- Sub-Components ---
 const CampaignCard = ({ campaign, onClick }: { campaign: Campaign, onClick: () => void }) => (
@@ -51,6 +55,7 @@ function NewCollectionPageComponent() {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   
 
   useEffect(() => {
@@ -123,6 +128,16 @@ const handleCampaignClick = (campaign: Campaign) => {
 const handleCategoryClick = (category: Category) => {
   setSelectedCategory(category);
   setView('products');
+};
+const toggleCategory = (categoryId: string) => {
+  setExpandedCategory(expandedCategory === categoryId ? null : categoryId);
+};
+
+// This is the simplified and correct version of the function
+const handleBackToCategories = () => {
+  setView('categories');
+  setSelectedCategory(null);
+  setSearchTerm(''); // Clear search when going back
 };
 
 const handleBack = () => {
@@ -280,7 +295,7 @@ const sortedAvailableProducts = useMemo(() => {
         <div className="sticky top-0 bg-white pt-2 pb-4 z-10">
                 <div className="flex items-center mb-4">
                 {view === 'products' && (
-                <button onClick={handleBack} className="mr-3 p-2 text-slate-500 hover:bg-slate-100 rounded-full">
+                <button onClick={handleBackToCategories} className="mr-3 p-2 text-slate-500 hover:bg-slate-100 rounded-full">
                     <ArrowLeft className="w-5 h-5" />
                 </button>
             )}
@@ -297,12 +312,33 @@ const sortedAvailableProducts = useMemo(() => {
  
  
                     <div className="flex-grow overflow-y-auto">
-                {view === 'categories' && (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
-                        {isLoadingCategories ? <p>Loading categories...</p> : categories.map((cat) => (
-                            <button key={cat.id} onClick={() => handleCategoryClick(cat)} className="p-4 bg-teal-100 rounded-lg text-slate-500 font-semibold hover:bg-teal-500 hover:text-slate-100 text-center">
-                                {cat.name}
-                            </button>
+                    {view === 'categories' && (
+                    <div className="space-y-2 mt-4">
+                        {isLoadingCategories ? <p>Loading categories...</p> : categories.map((mainCat) => (
+                            <div key={mainCat.id} className="bg-slate-50 rounded-lg">
+                                <button 
+                                    onClick={() => toggleCategory(mainCat.id)}
+                                    className="w-full flex justify-between items-center p-4 font-semibold text-slate-700 hover:bg-slate-100 rounded-lg"
+                                >
+                                    <span>{mainCat.name}</span>
+                                    {expandedCategory === mainCat.id ? <ChevronDown className="w-5 h-5"/> : <ChevronRight className="w-5 h-5"/>}
+                                </button>
+                                {expandedCategory === mainCat.id && (
+                                    <div className="p-4 border-t">
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {mainCat.subCategories?.map((subCat) => (
+                                                <button 
+                                                    key={subCat.id} 
+                                                    onClick={() => handleCategoryClick(subCat)}
+                                                    className="p-2 text-sm text-center bg-white rounded-md text-slate-600 hover:bg-teal-100 hover:text-teal-700"
+                                                >
+                                                    {subCat.name}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         ))}
                     </div>
                 )}

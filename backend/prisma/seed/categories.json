@@ -1,26 +1,127 @@
 [
   {
-    "id": "627d87e0-a4a6-4f63-a13e-6d4557ad38c6",
-    "name": "Sports Shoes"
+    "id": "1b06273d-9c88-5bc2-8ae7-71f19a37f6fb",
+    "name": "Books",
+    "parentId": null
   },
   {
-    "id": "8c6f0d5e-b1ca-4419-8b83-e0fdd02dd8b7",
-    "name": "Casual Footwear"
+    "id": "bdf4f114-19b8-5547-8c60-150870d596d9",
+    "name": "Travel",
+    "parentId": null
   },
   {
-    "id": "2a5e0aee-6acd-4566-933c-1d32a6833f85",
-    "name": "Formal Shoes"
+    "id": "f3987152-3545-541c-bc11-1fcb0e531e48",
+    "name": "Hotels",
+    "parentId": "bdf4f114-19b8-5547-8c60-150870d596d9"
   },
   {
-    "id": "84c2984c-7dc6-476a-861f-6779d003319a",
-    "name": "Boots"
+    "id": "3c3f5216-ab0a-5941-9b20-af809666a927",
+    "name": "Cafes",
+    "parentId": "bdf4f114-19b8-5547-8c60-150870d596d9"
   },
   {
-    "id": "37917320-667b-4817-912b-1f665ee80aa4",
-    "name": "Watches"
+    "id": "65565137-46da-590d-b3b7-9e99168ee6b4",
+    "name": "Bars and Restaurants",
+    "parentId": "bdf4f114-19b8-5547-8c60-150870d596d9"
   },
   {
-    "id": "8e280dd1-686f-4274-bda5-d00022129fb9",
-    "name": "Beauty & Personal Care"
+    "id": "57b5423c-d1c6-51bd-9c8d-c1c97cc8de1f",
+    "name": "Fashion",
+    "parentId": null
+  },
+  {
+    "id": "643db82e-3b70-5acd-b99e-fa2c471f7e8b",
+    "name": "Footwear",
+    "parentId": "57b5423c-d1c6-51bd-9c8d-c1c97cc8de1f"
+  },
+  {
+    "id": "d1ec20d3-e866-5f32-b4e0-21fe7ce0c34c",
+    "name": "Sports Shoes",
+    "parentId": "643db82e-3b70-5acd-b99e-fa2c471f7e8b"
+  },
+  {
+    "id": "d9e79764-08d6-5c5e-91b3-49832380812f",
+    "name": "Casual Footwear",
+    "parentId": "643db82e-3b70-5acd-b99e-fa2c471f7e8b"
+  },
+  {
+    "id": "ee714d57-40b8-55e3-ad11-683de84134e1",
+    "name": "Formal Shoes",
+    "parentId": "643db82e-3b70-5acd-b99e-fa2c471f7e8b"
+  },
+  {
+    "id": "3473aa28-2662-5a05-9c77-a3ffaccef1a4",
+    "name": "Boots",
+    "parentId": "643db82e-3b70-5acd-b99e-fa2c471f7e8b"
+  },
+  {
+    "id": "d04f6db7-6551-5c7b-9fbc-1843f780ef6d",
+    "name": "Watches",
+    "parentId": null
+  },
+  {
+    "id": "e8e36dfc-a9e7-5e6f-b060-aac95b1d5922",
+    "name": "Beauty & Personal Care",
+    "parentId": null
+  },
+  {
+    "id": "4bd1e794-439b-5b42-b71c-ddb0ecfe9f95",
+    "name": "Skincare",
+    "parentId": "e8e36dfc-a9e7-5e6f-b060-aac95b1d5922"
+  },
+  {
+    "id": "80e14483-90f8-5f9c-96a3-13e7bb0777f6",
+    "name": "Makeup",
+    "parentId": "e8e36dfc-a9e7-5e6f-b060-aac95b1d5922"
+  },
+  {
+    "id": "6e7c51af-eb7d-561b-8ac8-4bd785896272",
+    "name": "Fragrances",
+    "parentId": "e8e36dfc-a9e7-5e6f-b060-aac95b1d5922"
+  },
+  {
+    "id": "e527f0aa-45b9-52ca-91c8-c1fecd370502",
+    "name": "Haircare",
+    "parentId": "e8e36dfc-a9e7-5e6f-b060-aac95b1d5922"
+  },
+  {
+    "id": "fe7e5a53-be28-52c9-aab6-b184eac1dad1",
+    "name": "Home & Decor",
+    "parentId": null
+  },
+  {
+    "id": "aaab5555-5c23-501b-a2be-e23c1cccd712",
+    "name": "Antiques",
+    "parentId": "fe7e5a53-be28-52c9-aab6-b184eac1dad1"
+  },
+  {
+    "id": "cd4c15ab-607d-5381-af2e-e7599a57c6b7",
+    "name": "Lights",
+    "parentId": "fe7e5a53-be28-52c9-aab6-b184eac1dad1"
+  },
+  {
+    "id": "bd66b614-35f0-561d-a323-f277f79245ab",
+    "name": "Appliances",
+    "parentId": "fe7e5a53-be28-52c9-aab6-b184eac1dad1"
+  },
+  {
+    "id": "31084613-dffa-595b-9515-3f929480c0ec",
+    "name": "Kitchen & Dining",
+    "parentId": "fe7e5a53-be28-52c9-aab6-b184eac1dad1"
+  },
+  {
+    "id": "52eaa842-d7f9-5349-ae59-7e1b1f4162bf",
+    "name": "Furniture",
+    "parentId": "fe7e5a53-be28-52c9-aab6-b184eac1dad1"
+  },
+  {
+    "id": "bc14982e-4c7e-5526-9a21-b1a3c5b42b98",
+    "name": "Mobiles & Computers",
+    "parentId": null
+  },
+  {
+    "id": "d9ccfa4a-8ad9-524a-8e81-fef7e9c6f6bb",
+    "name": "TV, Appliances & Electronics",
+    "parentId": null
   }
 ]
