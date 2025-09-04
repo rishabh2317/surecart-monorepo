@@ -1,7 +1,7 @@
 // src/server.ts
 import Fastify, { FastifyRequest, FastifyReply } from 'fastify';
 import cors from '@fastify/cors';
-import { PrismaClient } from '@prisma/client';
+import { Category, PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
@@ -1185,34 +1185,50 @@ server.get('/public/campaigns/:campaignId/categories', async (request, reply) =>
     }
 });
 
+// A helper type for clarity. This is what our database query will return.
+type CategoryForTree = Pick<Category, 'id' | 'name' | 'parentId'>;
+type CategoryWithSubCategories = CategoryForTree & { subCategories: CategoryWithSubCategories[] };
+
+// This is the recursive helper function that builds the category tree
+const buildCategoryTree = (categories: CategoryForTree[], parentId: string | null = null): CategoryWithSubCategories[] => {
+    const tree: CategoryWithSubCategories[] = [];
+    
+    // Find all direct children of the current parentId
+    const children = categories.filter(c => c.parentId === parentId);
+
+    // For each child, find its own children recursively
+    for (const child of children) {
+        const subCategories = buildCategoryTree(categories, child.id);
+        const node = { ...child, subCategories: subCategories };
+        tree.push(node);
+    }
+    return tree;
+};
+
 server.get('/public/categories', async (request, reply) => {
     try {
-        const categories = await prisma.category.findMany({
-            where: {
-                // Only fetch top-level categories
-                parentId: null 
+        // 1. Fetch ALL categories from the database in a single, efficient query.
+        const allCategories = await prisma.category.findMany({
+            // THIS IS THE CORRECTED SECTION WITH THE `select` CLAUSE
+            select: {
+                id: true,
+                name: true,
+                parentId: true // parentId is crucial for building the tree
             },
-            // THIS IS THE CORRECTED SECTION
-            select: { 
-                id: true, 
-                name: true, 
-                subCategories: {
-                    select: {
-                        id: true,
-                        name: true
-                    }
-                } 
+            orderBy: {
+                name: 'asc'
             },
-            orderBy: { name: 'asc' },
         });
-        reply.send(categories);
+
+        // 2. Build the nested tree structure from the flat list in memory.
+        const categoryTree = buildCategoryTree(allCategories);
+        
+        reply.send(categoryTree);
     } catch (error) {
         server.log.error(error);
         reply.code(500).send({ message: "Error fetching categories" });
     }
 });
-
-
 
 
 // --- PUBLIC & UNIVERSAL ROUTES ---

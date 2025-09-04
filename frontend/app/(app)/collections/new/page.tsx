@@ -52,7 +52,10 @@ function NewCollectionPageComponent() {
 
   const [view, setView] = useState<'campaigns' | 'categories' | 'products'>('campaigns');
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [categoryPath, setCategoryPath] = useState<Category[]>([]);
+
+// `selectedCategory` is now a DERIVED value. It's simply the last item in the path.
+const selectedCategory = categoryPath[categoryPath.length - 1];
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
@@ -88,7 +91,7 @@ function NewCollectionPageComponent() {
       queryKey: ['campaigns'], 
       queryFn: getCampaigns 
   });
-  const { data: categories = [], isLoading: isLoadingCategories } = useQuery<Category[]>({ 
+  const { data: topLevelCategories = [], isLoading: isLoadingCategories } = useQuery<Category[]>({ 
     queryKey: ['categories'], 
     queryFn: getCategories,
     // THIS IS THE FIX: This now correctly enables the query on initial load
@@ -125,36 +128,34 @@ const handleCampaignClick = (campaign: Campaign) => {
   setSelectedCampaign(campaign);
   setView('products');
 };
-const handleCategoryClick = (category: Category) => {
-  setSelectedCategory(category);
-  setView('products');
-};
-const toggleCategory = (categoryId: string) => {
-  setExpandedCategory(expandedCategory === categoryId ? null : categoryId);
-};
+const handleCategoryClick = (category: Category, level: number) => {
+  const newPath = categoryPath.slice(0, level);
+  newPath.push(category);
+  setCategoryPath(newPath);
 
-// This is the simplified and correct version of the function
-const handleBackToCategories = () => {
-  setView('categories');
-  setSelectedCategory(null);
-  setSearchTerm(''); // Clear search when going back
-};
-
-const handleBack = () => {
-  if (view === 'products') {
-      setView('categories');
-      setSelectedCategory(null);
-      setSearchTerm('');
-  } else if (view === 'categories') {
-      setView('campaigns');
-      setSelectedCampaign(null);
+  if (!category.subCategories || category.subCategories.length === 0) {
+      setView('products');
   }
 };
+ 
+const handleBreadcrumbClick = (level: number) => {
+  if (view === 'products') {
+      setView('categories');
+  }
+  setCategoryPath(categoryPath.slice(0, level));
+};
+
+const handleBackToCategories = () => {
+  setView('categories');
+  setCategoryPath([]);
+}
+
+
 // When a search is performed, always switch to the products view
 useEffect(() => {
 if (searchTerm) {
     setView('products');
-    setSelectedCategory(null);
+    setCategoryPath([]);
     setSelectedCampaign(null); // Clear campaign selection when searching
 }
 }, [searchTerm]);
@@ -293,12 +294,14 @@ const sortedAvailableProducts = useMemo(() => {
         {/* --- RIGHT COLUMN: PRODUCT SELECTION (Redesigned) --- */}
         <aside className="w-full md:w-1/2 bg-white border-l border-slate-200 p-4 flex flex-col md:overflow-y-auto">
         <div className="sticky top-0 bg-white pt-2 pb-4 z-10">
-                <div className="flex items-center mb-4">
-                {view === 'products' && (
-                <button onClick={handleBackToCategories} className="mr-3 p-2 text-slate-500 hover:bg-slate-100 rounded-full">
-                    <ArrowLeft className="w-5 h-5" />
-                </button>
-            )}
+        <div className="flex items-center text-sm text-slate-500 mb-4">
+                <button onClick={() => handleBreadcrumbClick(0)} className="hover:text-teal-600">All Categories</button>
+                            {categoryPath.map((cat, index) => (
+                                <div key={cat.id} className="flex items-center">
+                                    <ChevronRight className="w-4 h-4 mx-1" />
+                                    <button onClick={() => handleBreadcrumbClick(index + 1)} className="hover:text-teal-600 truncate max-w-[100px]">{cat.name}</button>
+                                </div>
+                            ))}
                     <h3 className="font-bold text-slate-800 text-lg truncate">
                     {view === 'categories' ? 'Select a Category' : selectedCategory?.name || 'Search Results'}
                     <span className="font-normal text-slate-500"> ({selectedProducts.length} selected)</span>
@@ -311,37 +314,20 @@ const sortedAvailableProducts = useMemo(() => {
             </div>
  
  
-                    <div className="flex-grow overflow-y-auto">
-                    {view === 'categories' && (
-                    <div className="space-y-2 mt-4">
-                        {isLoadingCategories ? <p>Loading categories...</p> : categories.map((mainCat) => (
-                            <div key={mainCat.id} className="bg-slate-50 rounded-lg">
-                                <button 
-                                    onClick={() => toggleCategory(mainCat.id)}
-                                    className="w-full flex justify-between items-center p-4 font-semibold text-slate-700 hover:bg-slate-100 rounded-lg"
-                                >
-                                    <span>{mainCat.name}</span>
-                                    {expandedCategory === mainCat.id ? <ChevronDown className="w-5 h-5"/> : <ChevronRight className="w-5 h-5"/>}
-                                </button>
-                                {expandedCategory === mainCat.id && (
-                                    <div className="p-4 border-t">
-                                        <div className="grid grid-cols-2 gap-2">
-                                            {mainCat.subCategories?.map((subCat) => (
-                                                <button 
-                                                    key={subCat.id} 
-                                                    onClick={() => handleCategoryClick(subCat)}
-                                                    className="p-2 text-sm text-center bg-white rounded-md text-slate-600 hover:bg-teal-100 hover:text-teal-700"
-                                                >
-                                                    {subCat.name}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
+            <div className="flex-grow overflow-y-auto">
+                        {view === 'categories' && (
+                            <div className="space-y-2 mt-4">
+                                {isLoadingCategories ? (
+                    <p className="text-center text-slate-500 p-4">Loading categories...</p>
+                ):((categoryPath.length > 0 ? selectedCategory?.subCategories : topLevelCategories)?.map((cat) => (
+                                    <button key={cat.id} onClick={() => handleCategoryClick(cat, categoryPath.length)} className="w-full p-4 bg-slate-100 rounded-lg text-slate-700 font-semibold hover:bg-teal-100 hover:text-teal-700 text-left transition-colors flex justify-between items-center">
+                                        <span>{cat.name}</span>
+                                        {cat.subCategories && cat.subCategories.length > 0 && <ChevronRight className="w-5 h-5"/>}
+                                    </button>
+                                ))
+                        )}
                             </div>
-                        ))}
-                    </div>
-                )}
+                        )}
                  {view === 'products' && (
                     <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
                         {isLoadingProducts ? <p>Loading products...</p> : sortedAvailableProducts.map((product: Product) => {
