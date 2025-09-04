@@ -302,10 +302,7 @@ const sortedAvailableProducts = useMemo(() => {
                                     <button onClick={() => handleBreadcrumbClick(index + 1)} className="hover:text-teal-600 truncate max-w-[100px]">{cat.name}</button>
                                 </div>
                             ))}
-                    <h3 className="font-bold text-slate-800 text-lg truncate">
-                    {view === 'categories' ? 'Select a Category' : selectedCategory?.name || 'Search Results'}
-                    <span className="font-normal text-slate-500"> ({selectedProducts.length} selected)</span>
-                    </h3>
+
                 </div>
                 <div className="relative">
                     <input type="search" placeholder="Or search all products..." className="w-full pl-10 pr-4 py-2 border rounded-lg" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
@@ -320,7 +317,7 @@ const sortedAvailableProducts = useMemo(() => {
                                 {isLoadingCategories ? (
                     <p className="text-center text-slate-500 p-4">Loading categories...</p>
                 ):((categoryPath.length > 0 ? selectedCategory?.subCategories : topLevelCategories)?.map((cat) => (
-                                    <button key={cat.id} onClick={() => handleCategoryClick(cat, categoryPath.length)} className="w-full p-4 bg-slate-100 rounded-lg text-slate-700 font-semibold hover:bg-teal-100 hover:text-teal-700 text-left transition-colors flex justify-between items-center">
+                                    <button key={cat.id} onClick={() => handleCategoryClick(cat, categoryPath.length)} className="w-full p-4 bg-slate-100 rounded-lg text-slate-700 font-semibold hover:bg-teal-100 hover:text-teal-500 text-left transition-colors flex justify-between items-center">
                                         <span>{cat.name}</span>
                                         {cat.subCategories && cat.subCategories.length > 0 && <ChevronRight className="w-5 h-5"/>}
                                     </button>
