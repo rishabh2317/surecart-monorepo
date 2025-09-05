@@ -1,7 +1,7 @@
 // frontend/app/(app)/collections/new/page.tsx
 'use client';
 
-import { useState, useEffect, useMemo, Suspense } from 'react'; // Import Suspense
+import { useState, useEffect, useMemo, Suspense, useRef } from 'react'; // Import Suspense
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createCollection, searchProducts, getCampaigns, getBrands, getCategories } from '@/lib/api';
 import { useRouter, useSearchParams } from 'next/navigation'; // Import useSearchParams
@@ -59,6 +59,8 @@ const selectedCategory = categoryPath[categoryPath.length - 1];
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  // ++ NEW: Create a ref for the scrollable container ++
+  const productPanelRef = useRef<HTMLElement>(null);
   
 
   useEffect(() => {
@@ -104,6 +106,14 @@ const selectedCategory = categoryPath[categoryPath.length - 1];
     queryFn: () => searchProducts(searchTerm, selectedBrand, selectedCampaign?.id || null, selectedCategory?.id || null),
     enabled: view === 'products' || searchTerm.length > 0, 
   });
+
+   // ++ NEW: This useEffect handles the auto-scroll ++
+   useEffect(() => {
+    // When the view changes to 'products', scroll the panel to the top.
+    if (view === 'products' && productPanelRef.current) {
+        productPanelRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}, [view, selectedCategory]);
 
   const createCollectionMutation = useMutation({
     mutationFn: createCollection,
