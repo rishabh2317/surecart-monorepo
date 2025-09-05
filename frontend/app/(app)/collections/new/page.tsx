@@ -262,7 +262,7 @@ const sortedAvailableProducts = useMemo(() => {
         </button>
     }
  />
- <div className="flex-grow flex-1 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden">
+ <div className="flex-grow flex-1 flex flex-col-reverse md:flex-row overflow-y-auto md:overflow-hidden">
         {/* --- LEFT COLUMN: COLLECTION DETAILS (Redesigned) --- */}
         <main className="w-full md:w-1/2 p-6 md:overflow-y-auto">
           <div className="max-w-xl mx-auto">
