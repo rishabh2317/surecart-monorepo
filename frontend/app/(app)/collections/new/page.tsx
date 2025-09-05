@@ -108,12 +108,13 @@ const selectedCategory = categoryPath[categoryPath.length - 1];
   });
 
    // ++ NEW: This useEffect handles the auto-scroll ++
-   useEffect(() => {
-    // When the view changes to 'products', scroll the panel to the top.
-    if (view === 'products' && productPanelRef.current) {
-        productPanelRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-}, [view, selectedCategory]);
+    // THIS IS THE CORRECTED USEEFFECT FOR AUTO-SCROLL
+    useEffect(() => {
+      // We trigger the scroll when the selectedCategory changes, which happens right before the view switches to 'products'.
+      if (productPanelRef.current) {
+          productPanelRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+  }, [selectedCategory]);
 
   const createCollectionMutation = useMutation({
     mutationFn: createCollection,
@@ -330,7 +331,7 @@ const sortedAvailableProducts = useMemo(() => {
  
  
         {/* --- RIGHT COLUMN: PRODUCT SELECTION (Redesigned) --- */}
-        <aside className="w-full md:w-1/2 bg-white border-l border-slate-200 p-4 flex flex-col md:overflow-y-auto">
+        <aside ref={productPanelRef} className="w-full md:w-1/2 bg-white border-l border-slate-200 p-4 flex flex-col md:overflow-y-auto">
         <div className="sticky top-0 bg-white pt-2 pb-4 z-10">
         <div className="flex items-center text-sm text-slate-500 mb-4">
                 <button onClick={() => handleBreadcrumbClick(0)} className="hover:text-teal-600">All Categories</button>
