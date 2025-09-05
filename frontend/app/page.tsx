@@ -19,13 +19,13 @@ const CollectionCard = ({ collection }: { collection: any }) => (
         <img
           src={collection.coverImage}
           alt={collection.name}
-          className="w-full rounded-2xl shadow-lg hover:shadow-xl transition-shadow"
+          className="w-full rounded-2xl shadow-lg group-hover:shadow-xl transition-shadow min-h-[150px] object-cover"
         />
   
   <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/70 to-transparent rounded-2xl transition-opacity duration-300 opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
           <div className="p-4 text-white">
             {/* The line-clamp-2 class prevents the title from exceeding two lines */}
-            <h3 className="font-bold text-md leading-tight line-clamp-2">
+            <h3 className="font-bold text-md leading-tight line-clamp-1">
               {collection.name}
             </h3>
   
