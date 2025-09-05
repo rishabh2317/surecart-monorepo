@@ -285,6 +285,34 @@ const sortedAvailableProducts = useMemo(() => {
                     </div>
                     {coverImage && !isUploading && (<label htmlFor="cover-upload" className="absolute top-3 right-3 bg-white p-2 rounded-full shadow-md cursor-pointer hover:bg-slate-100"><Edit className="w-5 h-5 text-slate-600" /><input id="cover-upload" type="file" className="sr-only" onChange={handleCoverImageUpload} /></label>)}
                 </div>
+                <div>
+                                <label className="text-sm font-medium text-slate-700">
+                                    Products in Collection ({selectedProducts.length})
+                                </label>
+                                <div className="mt-2 min-h-[100px] bg-slate-50 rounded-lg p-3 border border-slate-200">
+                                    {selectedProducts.length > 0 ? (
+                                        <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+                                            {selectedProducts.map(product => (
+                                                <div key={product.id} className="relative group">
+                                                    <div className="aspect-square bg-slate-200 rounded-md overflow-hidden">
+                                                        <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                                                    </div>
+                                                    <button 
+                                                        onClick={() => toggleProductSelection(product)}
+                                                        className="absolute -top-1 -right-1 bg-white p-0.5 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    >
+                                                        <X className="w-4 h-4 text-slate-600" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center justify-center h-full">
+                                            <p className="text-sm text-slate-500">Selected products will appear here.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
               </div>
             </div>
           </div>
