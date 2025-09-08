@@ -27,8 +27,8 @@ model User {
   views           CollectionView[]
   comments        Comment[]
   coupons         Coupon[]
-  followers       Follow[]         @relation("Following")
-  following       Follow[]         @relation("Followers")
+  followers       Follow[]         @relation("Followers")
+  following       Follow[]         @relation("Following")
   transactions    Transaction[]
   likes           UserLikes[]
   bio             String?
