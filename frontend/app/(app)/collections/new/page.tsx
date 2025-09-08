@@ -33,14 +33,7 @@ const CampaignCard = ({ campaign, onClick }: { campaign: Campaign, onClick: () =
         <p className="text-sm text-slate-500">{campaign.brand.name}</p>
     </div>
 );
-// A small helper hook to track the previous value of a variable
-function usePrevious(value: any) {
-  const ref = useRef(value); 
-  useEffect(() => {
-    ref.current = value;
-  });
-  return ref.current;
-}
+
 
 // This is your original component, now renamed to allow for the Suspense wrapper
 function NewCollectionPageComponent() {
@@ -63,7 +56,7 @@ function NewCollectionPageComponent() {
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [categoryPath, setCategoryPath] = useState<Category[]>([]);
   // This ref is for the main scrollable container of the page
-  const mainPanelRef = useRef<HTMLDivElement>(null);
+  //const mainPanelRef = useRef<HTMLDivElement>(null);
 
 
 // `selectedCategory` is now a DERIVED value. It's simply the last item in the path.
@@ -120,22 +113,6 @@ const selectedCategory = categoryPath[categoryPath.length - 1];
     queryFn: () => searchProducts(searchTerm, selectedBrand, selectedCampaign?.id || null, selectedCategory?.id || null),
     enabled: view === 'products' || searchTerm.length > 0, 
   });
-
-   // --- THIS IS THE NEW, ROBUST SCROLL LOGIC ---
-   const prevIsLoadingCategories = usePrevious(isLoadingCategories);
-   const prevIsLoadingProducts = usePrevious(isLoadingProducts);
-
-   useEffect(() => {
-       // Condition 1: Initial categories just finished loading.
-       if (prevIsLoadingCategories && !isLoadingCategories && mainPanelRef.current) {
-           mainPanelRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-       }
-       // Condition 2: A new list of products just finished loading.
-       if (prevIsLoadingProducts && !isLoadingProducts && mainPanelRef.current) {
-           mainPanelRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-       }
-   }, [isLoadingCategories, isLoadingProducts, prevIsLoadingCategories, prevIsLoadingProducts]);
-   // --- END OF NEW LOGIC ---
 
    // ++ NEW: This useEffect handles the auto-scroll ++
     // THIS IS THE CORRECTED USEEFFECT FOR AUTO-SCROLL
@@ -303,7 +280,7 @@ const sortedAvailableProducts = useMemo(() => {
         </button>
     }
  />
- <div ref={mainPanelRef} className="flex-grow flex-1 flex flex-col-reverse md:flex-row overflow-y-auto md:overflow-hidden">
+ <div className="flex-grow flex-1 flex flex-col-reverse md:flex-row overflow-y-auto md:overflow-hidden">
         {/* --- LEFT COLUMN: COLLECTION DETAILS (Redesigned) --- */}
         <main className="w-full md:w-1/2 p-6 md:overflow-y-auto">
           <div className="max-w-xl mx-auto">
