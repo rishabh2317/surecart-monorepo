@@ -53,6 +53,9 @@ function NewCollectionPageComponent() {
   const [view, setView] = useState<'campaigns' | 'categories' | 'products'>('campaigns');
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [categoryPath, setCategoryPath] = useState<Category[]>([]);
+  // This ref is for the main scrollable container of the page
+  const mainPanelRef = useRef<HTMLDivElement>(null);
+
 
 // `selectedCategory` is now a DERIVED value. It's simply the last item in the path.
 const selectedCategory = categoryPath[categoryPath.length - 1];
@@ -100,6 +103,15 @@ const selectedCategory = categoryPath[categoryPath.length - 1];
     // for the category-first journey.
     enabled: view === 'categories' && !selectedCampaign,
 });
+
+// THIS IS THE NEW USEEFFECT FOR AUTO-SCROLL ON LOAD
+useEffect(() => {
+  // When categories are finished loading, scroll the main panel to the top
+  if (!isLoadingCategories && mainPanelRef.current) {
+      mainPanelRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}, [isLoadingCategories]); // This effect runs only when the loading status changes
+
 
   const { data: availableProducts = [], isLoading: isLoadingProducts } = useQuery({
     queryKey: ['products', searchTerm, selectedBrand, selectedCampaign?.id, selectedCategory?.id],
@@ -273,7 +285,7 @@ const sortedAvailableProducts = useMemo(() => {
         </button>
     }
  />
- <div className="flex-grow flex-1 flex flex-col-reverse md:flex-row overflow-y-auto md:overflow-hidden">
+ <div ref={mainPanelRef} className="flex-grow flex-1 flex flex-col-reverse md:flex-row overflow-y-auto md:overflow-hidden">
         {/* --- LEFT COLUMN: COLLECTION DETAILS (Redesigned) --- */}
         <main className="w-full md:w-1/2 p-6 md:overflow-y-auto">
           <div className="max-w-xl mx-auto">
