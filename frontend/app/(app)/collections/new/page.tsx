@@ -35,7 +35,7 @@ const CampaignCard = ({ campaign, onClick }: { campaign: Campaign, onClick: () =
 );
 // A small helper hook to track the previous value of a variable
 function usePrevious(value: any) {
-  const ref = useRef<any>();
+  const ref = useRef(value); 
   useEffect(() => {
     ref.current = value;
   });
@@ -113,13 +113,6 @@ const selectedCategory = categoryPath[categoryPath.length - 1];
     enabled: view === 'categories' && !selectedCampaign,
 });
 
-// THIS IS THE NEW USEEFFECT FOR AUTO-SCROLL ON LOAD
-useEffect(() => {
-  // When categories are finished loading, scroll the main panel to the top
-  if (!isLoadingCategories && mainPanelRef.current) {
-      mainPanelRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-}, [isLoadingCategories]); // This effect runs only when the loading status changes
 
 
   const { data: availableProducts = [], isLoading: isLoadingProducts } = useQuery({
