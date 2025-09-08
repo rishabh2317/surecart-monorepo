@@ -35,7 +35,7 @@ const CampaignCard = ({ campaign, onClick }: { campaign: Campaign, onClick: () =
 );
 // A small helper hook to track the previous value of a variable
 function usePrevious(value: any) {
-  const ref = useRef(value); 
+  const ref = useRef<any>();
   useEffect(() => {
     ref.current = value;
   });
