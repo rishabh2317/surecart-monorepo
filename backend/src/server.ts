@@ -4,13 +4,11 @@ import cors from '@fastify/cors';
 import { Category, PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import dotenv from 'dotenv';
 import crypto from 'crypto';
 import * as cheerio from 'cheerio';
 import axios from 'axios';
-
 if (process.env.NODE_ENV !== 'production') {
-    dotenv.config();
+    require("dotenv").config();
 }
 // Initialize server with better logging
 const server = Fastify({
