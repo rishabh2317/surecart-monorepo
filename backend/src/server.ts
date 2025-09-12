@@ -463,24 +463,38 @@ server.post('/api/fetch-url-metadata', async (request, reply) => {
     }
 
     try {
+        // Axios will automatically follow redirects from shortened URLs like amzn.to
         const response = await axios.get(url, {
             headers: {
-                // Use a common user-agent to avoid being blocked
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
             }
         });
+        
+        // We use the final URL after any redirects
+        const finalUrl = response.request.res.responseUrl || url;
         const html = response.data;
         const $ = cheerio.load(html);
 
-        const title = $('meta[property="og:title"]').attr('content') || $('title').text() || 'No title found';
-        const imageUrl = $('meta[property="og:image"]').attr('content') || null;
-        const description = $('meta[property="og:description"]').attr('content') || null;
+        const title = $('meta[property="og:title"]').attr('content') || $('#productTitle').text().trim() || 'No title found';
+        
+        // ++ THIS IS THE SMARTER IMAGE SCRAPING LOGIC ++
+        // It checks multiple common locations for the main product image on Amazon
+        let imageUrl = 
+            $('meta[property="og:image"]').attr('content') || 
+            $('#landingImage').attr('src') || 
+            $('#imgBlkFront').attr('src') || 
+            null;
 
-        if (!imageUrl) {
-            return reply.code(404).send({ message: "Could not find a product image at this URL." });
-        }
+            if (!imageUrl || !title) {
+                return reply.code(404).send({ 
+                    message: "Product details not found, please enter manually." 
+                });
+            }
+            
+        
+        const description = $('meta[property="og:description"]').attr('content') || $('#feature-bullets').text().trim() || null;
 
-        reply.send({ title, imageUrl, description });
+        reply.send({ title, imageUrl, description, baseUrl: finalUrl });
     } catch (error) {
         server.log.error(error);
         reply.code(500).send({ message: "Failed to fetch metadata from the URL." });

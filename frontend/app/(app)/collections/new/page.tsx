@@ -70,6 +70,10 @@ const selectedCategory = categoryPath[categoryPath.length - 1];
   const [linkUrl, setLinkUrl] = useState('');
   const [linkPreview, setLinkPreview] = useState<any>(null);
   const [isFetchingLink, setIsFetchingLink] = useState(false);
+  // ++ NEW STATE for the manual entry form ++
+  const [showManualForm, setShowManualForm] = useState(false);
+  const [manualProductName, setManualProductName] = useState('');
+  const [manualImageUrl, setManualImageUrl] = useState<string | null>(null);
   
 
   useEffect(() => {
@@ -113,8 +117,16 @@ const fetchMetadataMutation = useMutation({
   mutationFn: fetchUrlMetadata,
   onSuccess: (data) => {
       setLinkPreview({ ...data, baseUrl: linkUrl });
+      setShowManualForm(false);
   },
-  onError: (error: any) => alert(error.message),
+  onError: (error: any) => {
+    // If we get our specific error, show the manual form
+    if (error.message.includes("please enter manually")) {
+        setShowManualForm(true);
+    } else {
+        alert(error.message);
+    }
+},
   onSettled: () => setIsFetchingLink(false),
 });
 
@@ -249,25 +261,60 @@ const handleFetchLink = () => {
   if (!linkUrl) return;
   setIsFetchingLink(true);
   setLinkPreview(null);
+  setShowManualForm(false);
   fetchMetadataMutation.mutate(linkUrl);
 };
 
-const handleAddCustomProduct = () => {
-  if (!linkPreview) return;
-  const newProduct = {
-      id: `custom-${Date.now()}`, // A temporary unique ID
-      name: linkPreview.title,
-      imageUrl: linkPreview.imageUrl,
-      baseUrl: linkPreview.baseUrl,
-      brand: 'Custom Link',
-      isCustom: true, // Flag this as a custom product
-  };
-  // Add to selected products and clear the form
-  setSelectedProducts(prev => [...prev, newProduct]);
-  setLinkUrl('');
-  setLinkPreview(null);
+const handleManualImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setIsUploading(true);
+      const formData = new FormData();
+      formData.append('image', file);
+      
+      // This uses the public ImgBB API for image hosting.
+      // Replace with your preferred image hosting service if you have one.
+      const IMGBB_API_KEY = '5dc139f5ddfcb2f57f4f2e87b9d40dce'; // This is a public demo key
+      
+      try {
+          const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+              method: 'POST',
+              body: formData,
+          });
+          const data = await res.json();
+          if (data.success) {
+              setManualImageUrl(data.data.url);
+          } else {
+              throw new Error(data.error?.message || 'Image upload failed');
+          }
+      } catch (error: any) {
+          alert(`Could not upload image: ${error.message}`);
+      } finally {
+          setIsUploading(false);
+      }
+  }
 };
 
+const handleAddCustomProduct = (manualDetails: any = null) => {
+  const productData = manualDetails ? manualDetails : linkPreview;
+  if (!productData) return;
+  
+  const newProduct = {
+      id: `custom-${Date.now()}`,
+      name: productData.name,
+      imageUrl: productData.imageUrl,
+      baseUrl: productData.baseUrl,
+      brand: 'Custom Link',
+      isCustom: true,
+  };
+  setSelectedProducts(prev => [...prev, newProduct]);
+  // Reset the form
+  setLinkUrl('');
+  setLinkPreview(null);
+  setShowManualForm(false);
+  setManualProductName('');
+  setManualImageUrl(null);
+};
 const closeModal = () => {
   setShowModal(false);
   router.push('/dashboard');
@@ -371,7 +418,7 @@ const sortedAvailableProducts = useMemo(() => {
  
         {/* --- RIGHT COLUMN: PRODUCT SELECTION (Redesigned) --- */}
         <aside ref={productPanelRef} className="w-full md:w-1/2 bg-white border-l border-slate-200 p-4 flex flex-col md:overflow-y-auto">
-    <div className="sticky top-0 bg-white pt-2 pb-4 z-10">
+    <div className="sticky top-0 bg-white pt-2 z-10">
         {/* Breadcrumbs are only shown when browsing categories */}
         {browserTab === 'categories' && (
             <div className="flex items-center text-sm text-slate-500 mb-4">
@@ -391,21 +438,21 @@ const sortedAvailableProducts = useMemo(() => {
     </div>
 
     {/* --- TABS to switch between discovery methods --- */}
-    <div className="flex border-b mt-2">
+    <div className="flex border-b mt-4">
         <button onClick={() => setBrowserTab('categories')} className={`px-4 py-2 font-semibold ${browserTab === 'categories' ? 'border-b-2 border-teal-500 text-teal-600' : 'text-slate-500'}`}>
-            Browse Categories
+            Browse
         </button>
         <button onClick={() => setBrowserTab('link')} className={`px-4 py-2 font-semibold ${browserTab === 'link' ? 'border-b-2 border-teal-500 text-teal-600' : 'text-slate-500'}`}>
             Add by Link
         </button>
     </div>
 
-    <div className="flex-grow overflow-y-auto">
+    <div className="flex-grow overflow-y-auto pt-4">
         {/* --- View 1: BROWSE CATEGORIES --- */}
         {browserTab === 'categories' && (
             <>
                 {view === 'categories' && (
-                    <div className="space-y-2 mt-4">
+                    <div className="space-y-2">
                         {isLoadingCategories ? (
                             <p className="text-center text-slate-500 p-4">Loading categories...</p>
                         ) : (
@@ -419,13 +466,15 @@ const sortedAvailableProducts = useMemo(() => {
                     </div>
                 )}
                 {view === 'products' && (
-                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-                        {isLoadingProducts ? <p>Loading products...</p> : sortedAvailableProducts.map((product: Product) => {
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                        {isLoadingProducts ? <p className="col-span-full text-center p-4">Loading products...</p> : sortedAvailableProducts.map((product: Product) => {
                             const isSelected = selectedProducts.some(p => p.id === product.id);
                             return (
                                 <div key={product.id} onClick={() => toggleProductSelection(product)} className={`p-2 border rounded-lg cursor-pointer relative ${isSelected ? 'border-teal-500 ring-2 ring-teal-500' : 'border-slate-200'}`}>
                                     {isSelected && <div className="absolute top-1 right-1 bg-teal-500 text-white rounded-full p-0.5"><Check className="w-3 h-3" /></div>}
-                                    <div className="aspect-square bg-slate-100 rounded-md overflow-hidden mb-2"><img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" /></div>
+                                    <div className="aspect-square bg-slate-100 rounded-md overflow-hidden mb-2">
+                                        <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                                    </div>
                                     <p className="font-semibold text-sm text-slate-800 truncate">{product.name}</p>
                                     <p className="text-xs text-slate-500">{product.brand}</p>
                                 </div>
@@ -438,7 +487,7 @@ const sortedAvailableProducts = useMemo(() => {
 
         {/* --- View 2: ADD BY LINK --- */}
         {browserTab === 'link' && (
-            <div className="p-4 space-y-4">
+            <div className="space-y-4">
                 <h4 className="font-bold text-slate-800">Add any product from any website</h4>
                 <div className="flex space-x-2">
                     <input 
@@ -448,22 +497,57 @@ const sortedAvailableProducts = useMemo(() => {
                         onChange={(e) => setLinkUrl(e.target.value)}
                         className="flex-grow p-2 border rounded-lg"
                     />
-                    <button onClick={handleFetchLink} disabled={isFetchingLink} className="bg-slate-800 text-white font-semibold px-4 rounded-lg disabled:bg-slate-400">
+                    <button onClick={handleFetchLink} disabled={isFetchingLink} className="bg-slate-800 text-white font-semibold px-4 rounded-lg disabled:bg-slate-400 flex-shrink-0">
                         {isFetchingLink ? <Loader2 className="animate-spin" /> : 'Fetch'}
                     </button>
                 </div>
                 
-                {linkPreview && (
+                {linkPreview && !showManualForm && (
                     <div className="border rounded-lg p-4 space-y-4">
                         <p className="text-sm font-semibold text-slate-600">Product Preview:</p>
                         <div className="flex space-x-4">
                             <img src={linkPreview.imageUrl} alt="Product preview" className="w-24 h-24 rounded-md object-cover bg-slate-100" />
-                            <div className="flex-grow">
-                                <h5 className="font-bold text-slate-800">{linkPreview.title}</h5>
+                            <div className="flex-grow min-w-0">
+                                <h5 className="font-bold text-slate-800 truncate">{linkPreview.title}</h5>
                                 <p className="text-xs text-slate-500 truncate">{linkPreview.baseUrl}</p>
                             </div>
                         </div>
-                        <button onClick={handleAddCustomProduct} className="w-full flex items-center justify-center py-2 bg-teal-500 text-white font-semibold rounded-lg hover:bg-teal-600">
+                        <button onClick={() => handleAddCustomProduct()} className="w-full flex items-center justify-center py-2 bg-teal-500 text-white font-semibold rounded-lg hover:bg-teal-600">
+                            <Plus className="w-5 h-5 mr-2"/> Add to Collection
+                        </button>
+                    </div>
+                )}
+
+                {showManualForm && (
+                    <div className="border rounded-lg p-4 space-y-4">
+                        <p className="text-sm font-semibold text-red-600">Product details not found, please enter manually.</p>
+                        
+                        <div>
+                            <label className="text-sm font-medium text-slate-700">Product Name</label>
+                            <input type="text" value={manualProductName} onChange={e => setManualProductName(e.target.value)} className="mt-1 w-full p-2 border rounded-lg" />
+                        </div>
+
+                        <div>
+                            <label className="text-sm font-medium text-slate-700">Product Image</label>
+                            <div className="mt-1 aspect-square w-full flex justify-center items-center border-2 border-slate-300 border-dashed rounded-xl bg-slate-100 bg-cover bg-center" style={{ backgroundImage: `url(${manualImageUrl})` }}>
+                                {!manualImageUrl && !isUploading && (
+                                    <div className="text-center p-4">
+                                        <UploadCloud className="mx-auto h-10 w-10 text-slate-400" />
+                                        <label htmlFor="manual-image-upload" className="relative cursor-pointer rounded-md font-medium text-teal-600 hover:text-teal-500">
+                                            <span>Upload a file</span>
+                                            <input id="manual-image-upload" type="file" className="sr-only" onChange={handleManualImageUpload} />
+                                        </label>
+                                    </div>
+                                )}
+                                {isUploading && <Loader2 className="animate-spin" />}
+                            </div>
+                        </div>
+                        
+                        <button 
+                            onClick={() => handleAddCustomProduct({ name: manualProductName, imageUrl: manualImageUrl, baseUrl: linkUrl })}
+                            disabled={!manualProductName || !manualImageUrl}
+                            className="w-full flex items-center justify-center py-2 bg-teal-500 text-white font-semibold rounded-lg hover:bg-teal-600 disabled:bg-teal-300"
+                        >
                             <Plus className="w-5 h-5 mr-2"/> Add to Collection
                         </button>
                     </div>
