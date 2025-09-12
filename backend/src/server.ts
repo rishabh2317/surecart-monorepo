@@ -8,7 +8,9 @@ import dotenv from 'dotenv';
 import crypto from 'crypto';
 dotenv.config();
 
-
+if (process.env.NODE_ENV !== 'production') {
+    dotenv.config();
+}
 // Initialize server with better logging
 const server = Fastify({
  logger: {
