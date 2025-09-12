@@ -6,7 +6,6 @@ import * as bcrypt from 'bcryptjs';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
-dotenv.config();
 
 if (process.env.NODE_ENV !== 'production') {
     dotenv.config();
