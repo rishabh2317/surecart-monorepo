@@ -165,7 +165,7 @@ try {
 
 
 
-    // --- 2. Aggregate Real Data by Day ---
+    // --- 2. Aggregate Real Data day by Day ---
     const clicksByDayRaw = await prisma.click.groupBy({ by: ['createdAt'], where: { collection: { userId }, createdAt: { gte: sevenDaysAgo } }, _count: { _all: true } });
     const likesByDayRaw = await prisma.userLikes.groupBy({ by: ['createdAt'], where: { collection: { userId }, createdAt: { gte: sevenDaysAgo } }, _count: { _all: true } });
      // --- 3. Process Data for Time-Series Chart ---
