@@ -53,7 +53,7 @@ model Brand {
 model Product {
   id              String              @id @default(uuid())
   source          String
-  sourceProductId String
+  sourceProductId String?
   name            String
   description     String?
   imageUrls       String[]
@@ -61,8 +61,7 @@ model Product {
   brandId         String?
   price           Float?
   currency        String?
-  isCustom        Boolean   @default(false) // Flag to identify custom products
-  addedByUserId   String?   // To know which user added this product
+  addedByUserId   String?   
   addedByUser     User?     @relation("UserAddedProducts", fields: [addedByUserId], references: [id])
   category        String?
   lastUpdatedAt   DateTime            @default(now()) @updatedAt
@@ -71,6 +70,7 @@ model Product {
   brand           Brand?              @relation(fields: [brandId], references: [id])
   campaigns       CampaignProduct[] 
   categories      ProductCategory[]
+  isCustom        Boolean   @default(false)
   @@index([name, description])
 }
 model Campaign {
