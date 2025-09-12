@@ -7,6 +7,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
 import * as cheerio from 'cheerio';
+import axios from 'axios';
 
 if (process.env.NODE_ENV !== 'production') {
     dotenv.config();
@@ -464,8 +465,13 @@ server.post('/api/fetch-url-metadata', async (request, reply) => {
     }
 
     try {
-        const response = await fetch(url);
-        const html = await response.text();
+        const response = await axios.get(url, {
+            headers: {
+                // Use a common user-agent to avoid being blocked
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+        });
+        const html = response.data;
         const $ = cheerio.load(html);
 
         const title = $('meta[property="og:title"]').attr('content') || $('title').text() || 'No title found';
