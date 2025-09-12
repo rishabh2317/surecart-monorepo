@@ -82,7 +82,7 @@ server.get('/health', async (request: FastifyRequest, reply: FastifyReply) => {
  }
 });
 
-// GET /search?q=...
+
 // server.ts (or routes/search.ts) — Fastify route
 // Make sure `prisma` is your PrismaClient instance.
 
