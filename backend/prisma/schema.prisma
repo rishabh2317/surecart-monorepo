@@ -23,6 +23,7 @@ model User {
   brands            Brand[]   @relation("UserBrands")
   brandId String? @unique 
   brand             Brand?    @relation("BrandAccount", fields: [brandId], references: [id])
+  customProducts    Product[] @relation("UserAddedProducts")
   collections     Collection[]
   views           CollectionView[]
   comments        Comment[]
@@ -60,6 +61,9 @@ model Product {
   brandId         String?
   price           Float?
   currency        String?
+  isCustom        Boolean   @default(false) // Flag to identify custom products
+  addedByUserId   String?   // To know which user added this product
+  addedByUser     User?     @relation("UserAddedProducts", fields: [addedByUserId], references: [id])
   category        String?
   lastUpdatedAt   DateTime            @default(now()) @updatedAt
   clicks          Click[]

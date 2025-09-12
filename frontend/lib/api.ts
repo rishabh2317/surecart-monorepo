@@ -124,3 +124,11 @@ export const getFollowStatus = (creatorId: string, userId: string) => {
     if (!creatorId || !userId) return Promise.resolve({ isFollowing: false });
     return fetcher(`/users/${userId}/follow-status/${creatorId}`);
 };
+// ++ NEW FUNCTION ++
+export const fetchUrlMetadata = (url: string) => {
+    return fetcher('/api/fetch-url-metadata', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+    });
+};

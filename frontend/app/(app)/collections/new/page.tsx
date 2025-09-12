@@ -3,11 +3,11 @@
 
 import { useState, useEffect, useMemo, Suspense, useRef } from 'react'; // Import Suspense
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { createCollection, searchProducts, getCampaigns, getBrands, getCategories } from '@/lib/api';
+import { createCollection, fetchUrlMetadata, searchProducts, getCampaigns, getBrands, getCategories } from '@/lib/api';
 import { useRouter, useSearchParams } from 'next/navigation'; // Import useSearchParams
 import { getUserSession } from '@/lib/auth';
 import CreatorPageHeader from '@/components/creator/CreatorPageHeader';
-import {Check, Copy, X, UploadCloud, Edit, Search, ArrowLeft, ChevronDown, ChevronRight} from 'lucide-react';
+import {Link as LinkIcon, Loader2, Plus, Check, Copy, X, UploadCloud, Edit, Search, ArrowLeft, ChevronDown, ChevronRight} from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/lib/config';
 
@@ -66,6 +66,10 @@ const selectedCategory = categoryPath[categoryPath.length - 1];
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   // ++ NEW: Create a ref for the scrollable container ++
   const productPanelRef = useRef<HTMLElement>(null);
+  const [browserTab, setBrowserTab] = useState<'categories' | 'link'>('categories');
+  const [linkUrl, setLinkUrl] = useState('');
+  const [linkPreview, setLinkPreview] = useState<any>(null);
+  const [isFetchingLink, setIsFetchingLink] = useState(false);
   
 
   useEffect(() => {
@@ -105,7 +109,14 @@ const selectedCategory = categoryPath[categoryPath.length - 1];
     // for the category-first journey.
     enabled: view === 'categories' && !selectedCampaign,
 });
-
+const fetchMetadataMutation = useMutation({
+  mutationFn: fetchUrlMetadata,
+  onSuccess: (data) => {
+      setLinkPreview({ ...data, baseUrl: linkUrl });
+  },
+  onError: (error: any) => alert(error.message),
+  onSettled: () => setIsFetchingLink(false),
+});
 
 
   const { data: availableProducts = [], isLoading: isLoadingProducts } = useQuery({
@@ -234,7 +245,28 @@ const toggleProductSelection = (product: Product) => {
   setCopied(true);
   setTimeout(() => setCopied(false), 2000);
 };
+const handleFetchLink = () => {
+  if (!linkUrl) return;
+  setIsFetchingLink(true);
+  setLinkPreview(null);
+  fetchMetadataMutation.mutate(linkUrl);
+};
 
+const handleAddCustomProduct = () => {
+  if (!linkPreview) return;
+  const newProduct = {
+      id: `custom-${Date.now()}`, // A temporary unique ID
+      name: linkPreview.title,
+      imageUrl: linkPreview.imageUrl,
+      baseUrl: linkPreview.baseUrl,
+      brand: 'Custom Link',
+      isCustom: true, // Flag this as a custom product
+  };
+  // Add to selected products and clear the form
+  setSelectedProducts(prev => [...prev, newProduct]);
+  setLinkUrl('');
+  setLinkPreview(null);
+};
 
 const closeModal = () => {
   setShowModal(false);
@@ -339,39 +371,54 @@ const sortedAvailableProducts = useMemo(() => {
  
         {/* --- RIGHT COLUMN: PRODUCT SELECTION (Redesigned) --- */}
         <aside ref={productPanelRef} className="w-full md:w-1/2 bg-white border-l border-slate-200 p-4 flex flex-col md:overflow-y-auto">
-        <div className="sticky top-0 bg-white pt-2 pb-4 z-10">
-        <div className="flex items-center text-sm text-slate-500 mb-4">
+    <div className="sticky top-0 bg-white pt-2 pb-4 z-10">
+        {/* Breadcrumbs are only shown when browsing categories */}
+        {browserTab === 'categories' && (
+            <div className="flex items-center text-sm text-slate-500 mb-4">
                 <button onClick={() => handleBreadcrumbClick(0)} className="hover:text-teal-600">All Categories</button>
-                            {categoryPath.map((cat, index) => (
-                                <div key={cat.id} className="flex items-center">
-                                    <ChevronRight className="w-4 h-4 mx-1" />
-                                    <button onClick={() => handleBreadcrumbClick(index + 1)} className="hover:text-teal-600 truncate max-w-[100px]">{cat.name}</button>
-                                </div>
-                            ))}
-
-                </div>
-                <div className="relative">
-                    <input type="search" placeholder="Or search all products..." className="w-full pl-10 pr-4 py-2 border rounded-lg" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
-                    <Search className="w-5 h-5 text-slate-400 absolute top-1/2 left-3 -translate-y-1/2" />
-                </div>
+                {categoryPath.map((cat, index) => (
+                    <div key={cat.id} className="flex items-center">
+                        <ChevronRight className="w-4 h-4 mx-1" />
+                        <button onClick={() => handleBreadcrumbClick(index + 1)} className="hover:text-teal-600 truncate max-w-[100px]">{cat.name}</button>
+                    </div>
+                ))}
             </div>
- 
- 
-            <div className="flex-grow overflow-y-auto">
-                        {view === 'categories' && (
-                            <div className="space-y-2 mt-4">
-                                {isLoadingCategories ? (
-                    <p className="text-center text-slate-500 p-4">Loading categories...</p>
-                ):((categoryPath.length > 0 ? selectedCategory?.subCategories : topLevelCategories)?.map((cat) => (
-                                    <button key={cat.id} onClick={() => handleCategoryClick(cat, categoryPath.length)} className="w-full p-4 bg-slate-100 rounded-lg text-slate-700 font-semibold hover:bg-teal-100 hover:text-teal-500 text-left transition-colors flex justify-between items-center">
-                                        <span>{cat.name}</span>
-                                        {cat.subCategories && cat.subCategories.length > 0 && <ChevronRight className="w-5 h-5"/>}
-                                    </button>
-                                ))
+        )}
+        <div className="relative">
+            <input type="search" placeholder="Or search all products..." className="w-full pl-10 pr-4 py-2 border rounded-lg" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+            <Search className="w-5 h-5 text-slate-400 absolute top-1/2 left-3 -translate-y-1/2" />
+        </div>
+    </div>
+
+    {/* --- TABS to switch between discovery methods --- */}
+    <div className="flex border-b mt-2">
+        <button onClick={() => setBrowserTab('categories')} className={`px-4 py-2 font-semibold ${browserTab === 'categories' ? 'border-b-2 border-teal-500 text-teal-600' : 'text-slate-500'}`}>
+            Browse Categories
+        </button>
+        <button onClick={() => setBrowserTab('link')} className={`px-4 py-2 font-semibold ${browserTab === 'link' ? 'border-b-2 border-teal-500 text-teal-600' : 'text-slate-500'}`}>
+            Add by Link
+        </button>
+    </div>
+
+    <div className="flex-grow overflow-y-auto">
+        {/* --- View 1: BROWSE CATEGORIES --- */}
+        {browserTab === 'categories' && (
+            <>
+                {view === 'categories' && (
+                    <div className="space-y-2 mt-4">
+                        {isLoadingCategories ? (
+                            <p className="text-center text-slate-500 p-4">Loading categories...</p>
+                        ) : (
+                            (categoryPath.length > 0 ? selectedCategory?.subCategories : topLevelCategories)?.map((cat) => (
+                                <button key={cat.id} onClick={() => handleCategoryClick(cat, categoryPath.length)} className="w-full p-4 bg-slate-100 rounded-lg text-slate-700 font-semibold hover:bg-teal-100 hover:text-teal-500 text-left transition-colors flex justify-between items-center">
+                                    <span>{cat.name}</span>
+                                    {cat.subCategories && cat.subCategories.length > 0 && <ChevronRight className="w-5 h-5"/>}
+                                </button>
+                            ))
                         )}
-                            </div>
-                        )}
-                 {view === 'products' && (
+                    </div>
+                )}
+                {view === 'products' && (
                     <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
                         {isLoadingProducts ? <p>Loading products...</p> : sortedAvailableProducts.map((product: Product) => {
                             const isSelected = selectedProducts.some(p => p.id === product.id);
@@ -384,10 +431,47 @@ const sortedAvailableProducts = useMemo(() => {
                                 </div>
                             );
                         })}
+                    </div>
+                )}
+            </>
+        )}
+
+        {/* --- View 2: ADD BY LINK --- */}
+        {browserTab === 'link' && (
+            <div className="p-4 space-y-4">
+                <h4 className="font-bold text-slate-800">Add any product from any website</h4>
+                <div className="flex space-x-2">
+                    <input 
+                        type="url" 
+                        placeholder="Paste your affiliate link here..."
+                        value={linkUrl}
+                        onChange={(e) => setLinkUrl(e.target.value)}
+                        className="flex-grow p-2 border rounded-lg"
+                    />
+                    <button onClick={handleFetchLink} disabled={isFetchingLink} className="bg-slate-800 text-white font-semibold px-4 rounded-lg disabled:bg-slate-400">
+                        {isFetchingLink ? <Loader2 className="animate-spin" /> : 'Fetch'}
+                    </button>
+                </div>
+                
+                {linkPreview && (
+                    <div className="border rounded-lg p-4 space-y-4">
+                        <p className="text-sm font-semibold text-slate-600">Product Preview:</p>
+                        <div className="flex space-x-4">
+                            <img src={linkPreview.imageUrl} alt="Product preview" className="w-24 h-24 rounded-md object-cover bg-slate-100" />
+                            <div className="flex-grow">
+                                <h5 className="font-bold text-slate-800">{linkPreview.title}</h5>
+                                <p className="text-xs text-slate-500 truncate">{linkPreview.baseUrl}</p>
+                            </div>
                         </div>
+                        <button onClick={handleAddCustomProduct} className="w-full flex items-center justify-center py-2 bg-teal-500 text-white font-semibold rounded-lg hover:bg-teal-600">
+                            <Plus className="w-5 h-5 mr-2"/> Add to Collection
+                        </button>
+                    </div>
                 )}
             </div>
-        </aside>
+        )}
+    </div>
+</aside>
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import * as bcrypt from 'bcryptjs';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
+import * as cheerio from 'cheerio';
 
 if (process.env.NODE_ENV !== 'production') {
     dotenv.config();
@@ -455,7 +456,32 @@ server.get('/products/:productId', async (request: any, reply: any) => {
 
 
 
+// ++ NEW ENDPOINT: Fetches metadata from a URL ++
+server.post('/api/fetch-url-metadata', async (request, reply) => {
+    const { url } = request.body as { url: string };
+    if (!url) {
+        return reply.code(400).send({ message: "URL is required." });
+    }
 
+    try {
+        const response = await fetch(url);
+        const html = await response.text();
+        const $ = cheerio.load(html);
+
+        const title = $('meta[property="og:title"]').attr('content') || $('title').text() || 'No title found';
+        const imageUrl = $('meta[property="og:image"]').attr('content') || null;
+        const description = $('meta[property="og:description"]').attr('content') || null;
+
+        if (!imageUrl) {
+            return reply.code(404).send({ message: "Could not find a product image at this URL." });
+        }
+
+        reply.send({ title, imageUrl, description });
+    } catch (error) {
+        server.log.error(error);
+        reply.code(500).send({ message: "Failed to fetch metadata from the URL." });
+    }
+});
 
 
 
