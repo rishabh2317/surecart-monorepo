@@ -457,7 +457,7 @@ server.get('/products/:productId', async (request: any, reply: any) => {
 
 
 
-// ++ NEW ENDPOINT: Fetches metadata from a URL ++
+// ++ NEW ENDPOINT: Fetches metadata from a URL instead ++
 server.post('/api/fetch-url-metadata', async (request, reply) => {
     const { url } = request.body as { url: string };
     if (!url) {
