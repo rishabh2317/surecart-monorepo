@@ -301,7 +301,7 @@ const handleAddCustomProduct = (manualDetails: any = null) => {
   
   const newProduct = {
       id: `custom-${Date.now()}`,
-      name: productData.name,
+      name: manualDetails ? manualDetails.name : productData.title,
       imageUrl: productData.imageUrl,
       baseUrl: productData.baseUrl,
       brand: 'Custom Link',
