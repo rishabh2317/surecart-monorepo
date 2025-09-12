@@ -121,10 +121,10 @@ const fetchMetadataMutation = useMutation({
   },
   onError: (error: any) => {
     // If we get our specific error, show the manual form
-    if (error.message.includes("please enter manually")) {
-        setShowManualForm(true);
-    } else {
-        alert(error.message);
+    if (error.error === "MANUAL_ENTRY_REQUIRED") {
+      setShowManualForm(true);
+  } else {
+        alert(error.message || "An unknown error occurred.");
     }
 },
   onSettled: () => setIsFetchingLink(false),
@@ -306,6 +306,7 @@ const handleAddCustomProduct = (manualDetails: any = null) => {
       baseUrl: productData.baseUrl,
       brand: 'Custom Link',
       isCustom: true,
+      addedByUserId: user?.id,
   };
   setSelectedProducts(prev => [...prev, newProduct]);
   // Reset the form

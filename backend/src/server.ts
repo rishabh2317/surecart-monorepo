@@ -6,10 +6,27 @@ import * as bcrypt from 'bcryptjs';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import crypto from 'crypto';
 import * as cheerio from 'cheerio';
+//import Redis from 'ioredis';
+//import { CookieJar } from 'tough-cookie';
+//import { wrapper } from 'axios-cookiejar-support';
+import { URL } from 'url';
+//import pTimeout from 'p-timeout'; 
 import axios from 'axios';
 if (process.env.NODE_ENV !== 'production') {
     require("dotenv").config();
 }
+//const redis = process.env.REDIS_URL ? new Redis(process.env.REDIS_URL) : null;
+
+const USER_AGENTS = [
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119 Safari/537.36',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15',
+  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119 Safari/537.36',
+];
+
+function pickUserAgent() {
+  return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
+}
+
 // Initialize server with better logging
 const server = Fastify({
  logger: {
@@ -487,7 +504,8 @@ server.post('/api/fetch-url-metadata', async (request, reply) => {
 
             if (!imageUrl || !title) {
                 return reply.code(404).send({ 
-                    message: "Product details not found, please enter manually." 
+                    error: "MANUAL_ENTRY_REQUIRED",
+                    message: "Product details not found, please enter manually."
                 });
             }
             
@@ -497,7 +515,10 @@ server.post('/api/fetch-url-metadata', async (request, reply) => {
         reply.send({ title, imageUrl, description, baseUrl: finalUrl });
     } catch (error) {
         server.log.error(error);
-        reply.code(500).send({ message: "Failed to fetch metadata from the URL." });
+        reply.code(500).send({ 
+            error: "MANUAL_ENTRY_REQUIRED",
+            message: "Failed to fetch from that URL. Please enter details manually." 
+        });
     }
 });
 
@@ -920,83 +941,96 @@ try {
 
 
 server.post('/collections', async (request, reply) => {
-let { name, products, userId, description, coverImageUrl } = request.body as any;
-try {
-    // --- VALIDATION STEP ---
-    const productIds = products.map((p: any) => p.id);
-    const existingProductsCount = await prisma.product.count({
-        where: { id: { in: productIds } },
-    });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    if (existingProductsCount !== productIds.length) {
-        return reply.code(400).send({ message: "One or more selected products do not exist. Please refresh and try again." });
-    }
-    // --- END VALIDATION ---
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    if (!coverImageUrl && products && products.length > 0) {
-        const firstProduct = await prisma.product.findUnique({ where: { id: products[0].id } });
-        if (firstProduct) coverImageUrl = firstProduct.imageUrls[0];
+    // 1. DESTRUCTURE THE INCOMING DATA
+    // The 'products' array can contain a mix of existing and new custom products.
+    let { name, products, userId, description, coverImageUrl } = request.body as any;
+    
+    // 2. BASIC VALIDATION
+    if (!userId || !products || !name) {
+        return reply.code(400).send({ message: "Name, products, and userId are required." });
     }
 
+    try {
+        const productLinks = [];
+        
+        // 3. SEPARATE EXISTING PRODUCTS FROM NEW CUSTOM ONES
+        const existingProducts = products.filter((p: any) => !p.isCustom);
+        const customProducts = products.filter((p: any) => p.isCustom);
+        const existingProductIds = existingProducts.map((p: any) => p.id);
 
+        // 4. VALIDATE EXISTING PRODUCTS
+        // This is the crucial check to ensure all non-custom products are legitimate.
+        if (existingProductIds.length > 0) {
+            const foundProductsCount = await prisma.product.count({
+                where: { id: { in: existingProductIds } },
+            });
+            if (foundProductsCount !== existingProductIds.length) {
+                return reply.code(400).send({ message: "One or more of the selected products do not exist." });
+            }
+        }
 
+        // Add the validated existing products to our final list for linking
+        for (const id of existingProductIds) {
+            productLinks.push({ productId: id });
+        }
 
+        // 5. CREATE NEW CUSTOM PRODUCTS
+        // Loop through the new custom products and create them in the database.
+        for (const customProduct of customProducts) {
+            const newProduct = await prisma.product.create({
+                data: {
+                    name: customProduct.name,
+                    imageUrls: [customProduct.imageUrl],
+                    baseUrl: customProduct.baseUrl,
+                    source: 'CUSTOM',
+                    isCustom: true,
+                    addedByUserId: userId, // Link the product to the creator who added it
+                    brand: {
+                        connectOrCreate: {
+                            where: { name: customProduct.brand || 'Custom' },
+                            create: { name: customProduct.brand || 'Custom' },
+                        },
+                    },
+                },
+            });
+            // Add the newly created product's ID to our final list for linking
+            productLinks.push({ productId: newProduct.id });
+        }
 
+        // 6. SET A DEFAULT COVER IMAGE
+        // If no cover image was uploaded, use the image of the first product in the collection.
+        if (!coverImageUrl && productLinks.length > 0) {
+            const firstProduct = await prisma.product.findUnique({ where: { id: productLinks[0].productId } });
+            if (firstProduct) {
+                coverImageUrl = firstProduct.imageUrls[0];
+            }
+        }
 
+        // 7. CREATE THE COLLECTION AND LINK ALL PRODUCTS
+        // This is the final step where the collection is created and connected to all products.
+        const newCollection = await prisma.collection.create({
+            data: {
+                name,
+                slug: name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+                userId,
+                description,
+                coverImageUrl,
+                products: {
+                    create: productLinks.map((p, index) => ({
+                        productId: p.productId,
+                        displayOrder: index, // Set the order of products in the collection
+                    })),
+                },
+            },
+        });
+        
+        reply.code(201).send(newCollection);
 
-
-
-
-
-
-
-
-
-
-    const newCollection = await prisma.collection.create({
-        data: {
-            name, slug: name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
-            userId, description, coverImageUrl,
-            products: { create: products.map((p: any, index: number) => ({ productId: p.id, displayOrder: index })) },
-        },
-    });
-    reply.code(201).send(newCollection);
-} catch (error) {
-    server.log.error(error);
-    reply.code(500).send({ message: "Error creating collection" });
-}
+    } catch (error) {
+        server.log.error(error);
+        reply.code(500).send({ message: "Error creating collection" });
+    }
 });
-
 
 
 
