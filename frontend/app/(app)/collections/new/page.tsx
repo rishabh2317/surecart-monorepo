@@ -444,7 +444,7 @@ const sortedAvailableProducts = useMemo(() => {
             Browse
         </button>
         <button onClick={() => setBrowserTab('link')} className={`px-4 py-2 font-semibold ${browserTab === 'link' ? 'border-b-2 border-teal-500 text-teal-600' : 'text-slate-500'}`}>
-            Add by Link
+            Add by Afiliate Link
         </button>
     </div>
 
@@ -489,7 +489,7 @@ const sortedAvailableProducts = useMemo(() => {
         {/* --- View 2: ADD BY LINK --- */}
         {browserTab === 'link' && (
             <div className="space-y-4">
-                <h4 className="font-bold text-slate-800">Add any product from any website</h4>
+                <h4 className="font-bold text-slate-800">Add your own affiliate link or any product from any website</h4>
                 <div className="flex space-x-2">
                     <input 
                         type="url" 
