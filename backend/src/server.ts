@@ -984,7 +984,11 @@ server.post('/collections', async (request, reply) => {
                     baseUrl: customProduct.baseUrl,
                     source: 'CUSTOM',
                     isCustom: true,
-                    addedByUserId: userId, // Link the product to the creator who added it
+                    addedByUser: {
+                        connect: {
+                            id: userId 
+                        }
+                    },// Link the product to the creator who added it
                     brand: {
                         connectOrCreate: {
                             where: { name: customProduct.brand || 'Custom' },
