@@ -74,13 +74,30 @@ const selectedCategory = categoryPath[categoryPath.length - 1];
   const [showManualForm, setShowManualForm] = useState(false);
   const [manualProductName, setManualProductName] = useState('');
   const [manualImageUrl, setManualImageUrl] = useState<string | null>(null);
-  
+  const [isDirty, setIsDirty] = useState(false);
+
 
   useEffect(() => {
     const sessionUser = getUserSession();
     if (!sessionUser) router.push('/login');
     else setUser(sessionUser);
   }, [router]);
+
+  // ++ NEW: useEffect to handle the "are you sure?" pop-up ++
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+        if (isDirty) {
+            e.preventDefault();
+            e.returnValue = ''; // Required for modern browsers
+        }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+}, [isDirty]); // Re-attach the listener if the 'isDirty' state changes
 
   // This useEffect now correctly reads the URL parameters on page load
   useEffect(() => {
@@ -373,11 +390,11 @@ const sortedAvailableProducts = useMemo(() => {
             <div className="space-y-6">
               <div>
                 <label className="text-sm font-medium text-slate-700">Title</label>
-                <input type="text" value={collectionName} onChange={e => setCollectionName(e.target.value)} placeholder="e.g. My Everyday Skincare" className="mt-1 w-full p-3 placeholder-slate-400 border border-slate-300 bg-white rounded-lg" />
+                <input type="text" value={collectionName} onChange={e => {setCollectionName(e.target.value); setIsDirty(true);}} placeholder="e.g. My Everyday Skincare" className="mt-1 w-full p-3 placeholder-slate-400 border border-slate-300 bg-white rounded-lg" />
               </div>
               <div>
                 <label className="text-sm font-medium text-slate-700">Description</label>
-                <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Tell your audience about this collection..." className="mt-1 w-full p-3 border placeholder-slate-400 border-slate-300 bg-white rounded-lg h-32"></textarea>
+                <textarea value={description} onChange={e => {setDescription(e.target.value); setIsDirty(true);} } placeholder="Tell your audience about this collection..." className="mt-1 w-full p-3 border placeholder-slate-400 border-slate-300 bg-white rounded-lg h-32"></textarea>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">Cover Photo (Optional)</label>
@@ -425,9 +442,15 @@ const sortedAvailableProducts = useMemo(() => {
         {/* --- RIGHT COLUMN: PRODUCT SELECTION (Redesigned) --- */}
         <aside ref={productPanelRef} className="w-full md:w-1/2 bg-white border-l border-slate-200 p-4 flex flex-col md:overflow-y-auto">
     <div className="sticky top-0 bg-white pt-2 z-10">
+    <h3 className="font-bold text-lg text-slate-800 mb-2">Add Products</h3>
         {/* Breadcrumbs are only shown when browsing categories */}
         {browserTab === 'categories' && (
             <div className="flex items-center text-sm text-slate-500 mb-4">
+              {categoryPath.length > 0 && (
+                                <button onClick={() => handleBreadcrumbClick(categoryPath.length - 1)} className="mr-2 p-1 hover:bg-slate-100 rounded-full">
+                                    <ArrowLeft className="w-4 h-4" />
+                                </button>
+                            )}
                 <button onClick={() => handleBreadcrumbClick(0)} className="hover:text-teal-600">All Categories</button>
                 {categoryPath.map((cat, index) => (
                     <div key={cat.id} className="flex items-center">
@@ -495,7 +518,7 @@ const sortedAvailableProducts = useMemo(() => {
         {/* --- View 2: ADD BY LINK --- */}
         {browserTab === 'link' && (
             <div className="space-y-4">
-                <h4 className="font-bold text-slate-800">Add your own affiliate link or any product from any website</h4>
+                <h4 className="font-normal text-slate-800">Add your own affiliate link or any product from any website</h4>
                 <div className="flex space-x-2">
                     <input 
                         type="url" 
@@ -553,7 +576,7 @@ const sortedAvailableProducts = useMemo(() => {
                         <button 
                             onClick={() => handleAddCustomProduct({ name: manualProductName, imageUrl: manualImageUrl, baseUrl: linkUrl })}
                             disabled={!manualProductName || !manualImageUrl}
-                            className="w-full flex items-center justify-center py-2 bg-teal-500 text-white font-semibold rounded-lg hover:bg-teal-600 disabled:bg-teal-300"
+                            className="w-full flex items-center justify-center py-2 bg-teal-500 text-white font-semibold rounded-lg hover:bg-teal-600 disabled:bg-teal-50"
                         >
                             <Plus className="w-5 h-5 mr-2"/> Add to Collection
                         </button>
