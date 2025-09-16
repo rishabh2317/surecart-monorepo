@@ -116,9 +116,9 @@ export default function AnalyticsPage() {
                             <thead>
                                 <tr className="text-xs font-semibold text-slate-500 border-b uppercase">
                                     <th className="p-3">Collection</th>
-                                    <th className="p-3 text-right">Clicks</th>
+                                    <th className="p-3 text-right">External Clicks</th>
                                     <th className="p-3 text-right">Likes</th>
-                                    <th className="p-3 text-right">Shares (Simulated)</th>
+                                    <th className="p-3 text-right">Views</th>
                                 </tr>
                             </thead>
                             <tbody>

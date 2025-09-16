@@ -162,7 +162,7 @@ try {
 
     const collections = await prisma.collection.findMany({
         where: { userId },
-        include: { _count: { select: { products: true, clicks: true, likedBy: true } } },
+        include: { _count: { select: { products: true, clicks: true, likedBy: true, views: true } } },
     });
     const totalImpressions = await prisma.collectionView.count({
         where: {
@@ -216,7 +216,7 @@ try {
     const totalLikes = collections.reduce((sum, col) => sum + col._count.likedBy, 0);
      const topCollections = collections.map(c => ({
         id: c.id, name: c.name, clicks: c._count.clicks, likes: c._count.likedBy,
-        shares: Math.floor(c._count.clicks / 10 + c._count.likedBy * 2),
+        shares: c._count.views
     })).sort((a, b) => b.clicks - a.clicks).slice(0, 5);
 
     // --- 5. Send Final Payload ---
@@ -1364,21 +1364,39 @@ server.get('/products/search', async (request, reply) => {
 
 
 // POST /public/collections/:collectionId/view
-server.post('/public/collections/:collectionId/view', async (request, reply) => {
-const { collectionId } = request.params as { collectionId: string };
-const { userId } = request.body as { userId?: string }; // userId is optional
-try {
-    await prisma.collectionView.create({
-        data: {
-            collectionId,
-            userId: userId || null, // Handle anonymous views
+server.post('/collections/:collectionId/view', async (request, reply) => {
+    const { collectionId } = request.params as { collectionId: string };
+    const { userId } = request.body as { userId?: string }; // The logged-in user (optional)
+
+    try {
+        const collection = await prisma.collection.findUnique({
+            where: { id: collectionId },
+            select: { userId: true } // Select only the owner's ID for efficiency
+        });
+
+        if (!collection) {
+            return reply.code(404).send({ message: "Collection not found" });
         }
-    });
-    reply.code(201).send({ message: "View logged successfully." });
-} catch (error) {
-    server.log.error(error);
-    reply.code(500).send({ message: "Error logging view" });
-}
+
+        // THIS IS THE NEW CONDITION
+        // Only record a view if there is no logged-in user OR if the logged-in user
+        // is not the owner of the collection.
+        if (!userId || userId !== collection.userId) {
+            await prisma.collectionView.create({
+                data: {
+                    collectionId: collectionId,
+                    userId: userId, // Can be null for anonymous views
+                }
+            });
+        }
+        
+        // Always send a success response, even if a view was not recorded.
+        return reply.code(200).send({ message: "View processed." });
+
+    } catch (error) {
+        server.log.error(error);
+        reply.code(500).send({ message: "Error processing view" });
+    }
 });
 
 

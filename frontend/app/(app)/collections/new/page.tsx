@@ -444,7 +444,7 @@ const sortedAvailableProducts = useMemo(() => {
             Browse
         </button>
         <button onClick={() => setBrowserTab('link')} className={`px-4 py-2 font-semibold ${browserTab === 'link' ? 'border-b-2 border-teal-500 text-teal-600' : 'text-slate-500'}`}>
-            Add by Afiliate Link
+            Add by Affiliate Link
         </button>
     </div>
 
