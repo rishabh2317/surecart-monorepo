@@ -181,6 +181,7 @@ export default function PublicCollectionPage() {
     const { data: collection, isLoading, isError } = useQuery({
         queryKey: ['publicCollection', username, collectionSlug],
         queryFn: () => getCollectionData(username, collectionSlug),
+        enabled: !!collectionId,
     });
 
     useEffect(() => {
