@@ -192,14 +192,16 @@ export default function PublicCollectionPage() {
 
     // --- ADD THIS NEW useEffect HOOK ---
     useEffect(() => {
-        // This ensures we only log a view once and have a valid collectionId.
-        if (collectionId) {
+        // This effect now waits for the 'collection' data to be successfully fetched.
+        // It then uses the real collection.id to record the view.
+        if (collection && collection.id) {
             recordCollectionView({
-                collectionId: collectionId,
-                userId: user?.id, // Pass the userId if available
+                collectionId: collection.id,
+                userId: user?.id,
             });
         }
-    }, [collectionId, user?.id]); 
+    }, [collection, user?.id]); // The dependency array ensures this runs when the collection data arrives.
+
 
     const likeStatusQueryKey = ['likeStatus', collection?.id, user?.id];
     const { data: likeStatus } = useQuery({
