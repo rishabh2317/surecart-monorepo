@@ -10,6 +10,10 @@ import { useState, useEffect, useRef } from 'react';
 import AskAIDrawer from '@/components/shared/AskAIDrawer';
 import ShareModal from '@/components/shared/ShareModal';
 import { API_BASE_URL } from '@/lib/config';
+import { 
+    recordClick, 
+    recordCollectionView 
+} from '@/lib/api';
 
 // --- API Functions (Preserved from your working code) ---
 async function getCollectionData(username: string, slug: string) {
@@ -86,8 +90,29 @@ async function getComments(collectionId: string) {
 
 // --- SUB-COMPONENTS (Preserved and redesigned from your working code) ---
 // --- SUB-COMPONENTS for a clean structure ---
-const ProductCard = ({ product }: { product: any }) => {
+const ProductCard = ({ product, collectionId }: { product: any, collectionId: string }) => {
+    const { user } = useAuth();
     const [isAiDrawerOpen, setIsAiDrawerOpen] = useState(false);
+
+    const recordClickMutation = useMutation({
+        mutationFn: recordClick,
+        onError: (error) => console.error("Failed to record click:", error),
+    });
+
+     // THIS IS THE NEW CLICK HANDLER
+     const handleProductClick = (e: React.MouseEvent) => {
+        e.preventDefault(); // Prevent the link from navigating immediately
+        
+        // Record the click in the background
+        recordClickMutation.mutate({
+            productId: product.id,
+            collectionId: collectionId,
+            userId: user?.id,
+        });
+
+        // Open the external link in a new tab
+        window.open(product.buyUrl, '_blank', 'noopener,noreferrer');
+    };
 
     return (
         <>
@@ -114,6 +139,7 @@ const ProductCard = ({ product }: { product: any }) => {
                         
                         <a 
                             href={product.buyUrl}
+                            onClick={handleProductClick}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="w-full flex items-center justify-center px-4 py-2 font-semibold text-white bg-slate-800 rounded-lg hover:bg-slate-900"
@@ -148,6 +174,9 @@ export default function PublicCollectionPage() {
     const [pageUrl, setPageUrl] = useState('');
     const username = params.username as string;
     const collectionSlug = params.collectionSlug as string;
+    const collectionId = Array.isArray(params.collectionSlug)
+    ? params.collectionSlug[0]
+    : params.collectionSlug;
     
     const { data: collection, isLoading, isError } = useQuery({
         queryKey: ['publicCollection', username, collectionSlug],
@@ -162,16 +191,14 @@ export default function PublicCollectionPage() {
 
     // --- ADD THIS NEW useEffect HOOK ---
     useEffect(() => {
-        // This ensures we only log a view once the collection data has successfully loaded
-        if (collection && collection.id) {
-            fetch(`${API_BASE_URL}/public/collections/${collection.id}/view`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                // If a user is logged in, we can associate the view with them
-                body: JSON.stringify({ userId: user?.id || null }),
+        // This ensures we only log a view once and have a valid collectionId.
+        if (collectionId) {
+            recordCollectionView({
+                collectionId: collectionId,
+                userId: user?.id, // Pass the userId if available
             });
         }
-    }, [collection, user]); // This hook runs whenever the collection data or user state changes
+    }, [collectionId, user?.id]); 
 
     const likeStatusQueryKey = ['likeStatus', collection?.id, user?.id];
     const { data: likeStatus } = useQuery({
@@ -352,7 +379,7 @@ export default function PublicCollectionPage() {
 
                 <main className="container mx-auto p-4 sm:p-6 lg:p-8">
                     <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                        {collection.products.map((product: any) => (<ProductCard key={product.id} product={product} />))}
+                        {collection.products.map((product: any) => (<ProductCard key={product.id} product={product} collectionId={collection.id} />))}
                     </div>
                 </main>
             {showComments && (

@@ -132,3 +132,25 @@ export const fetchUrlMetadata = (url: string) => {
         body: JSON.stringify({ url }),
     });
 };
+
+// Function to record a product click
+export const recordClick = async (data: { productId: string; collectionId: string; userId?: string }) => {
+    return fetcher(`/products/${data.productId}/click`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            collectionId: data.collectionId,
+            userId: data.userId 
+        }),
+    });
+};
+
+// Function to record a collection view
+export const recordCollectionView = async (data: { collectionId: string; userId?: string }) => {
+    // We use a "fire and forget" approach here, so we don't need to wait for the response
+    fetcher(`/collections/${data.collectionId}/view`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: data.userId }),
+    });
+};

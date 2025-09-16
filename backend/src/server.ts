@@ -146,6 +146,40 @@ server.get('/search', async (request: any, reply: any) => {
     }
 });
   
+// backend/src/server.ts
+
+// ... (other routes) ...
+
+// ++ NEW ENDPOINT: To record a click on a product link ++
+server.post('/products/:productId/click', async (request, reply) => {
+    const { productId } = request.params as { productId: string };
+    const { userId, collectionId } = request.body as { userId?: string, collectionId: string };
+
+    if (!collectionId) {
+        return reply.code(400).send({ message: "Collection ID is required to track a click." });
+    }
+
+    try {
+        const data: any = {
+            productId: productId,
+            collectionId: collectionId,
+        };
+
+        // If a userId is provided, connect the click to that user.
+        if (userId) {
+            data.user = { 
+                connect: { id: userId } 
+            };
+        }
+
+        await prisma.click.create({ data });
+        
+        return reply.code(200).send({ message: "Click recorded." });
+    } catch (error) {
+        server.log.error(error);
+        reply.code(500).send({ message: "Error recording click" });
+    }
+});
 
 server.get('/dashboard/:userId/analytics', async (request, reply) => {
 const { userId } = request.params as { userId: string };
