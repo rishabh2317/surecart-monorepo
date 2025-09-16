@@ -440,11 +440,11 @@ const sortedAvailableProducts = useMemo(() => {
 
     {/* --- TABS to switch between discovery methods --- */}
     <div className="flex border-b mt-4">
+    <button onClick={() => setBrowserTab('link')} className={`px-4 py-2 font-semibold ${browserTab === 'link' ? 'border-b-2 border-teal-500 text-teal-600' : 'text-slate-500'}`}>
+            Add by Affiliate Link
+        </button>
         <button onClick={() => setBrowserTab('categories')} className={`px-4 py-2 font-semibold ${browserTab === 'categories' ? 'border-b-2 border-teal-500 text-teal-600' : 'text-slate-500'}`}>
             Browse
-        </button>
-        <button onClick={() => setBrowserTab('link')} className={`px-4 py-2 font-semibold ${browserTab === 'link' ? 'border-b-2 border-teal-500 text-teal-600' : 'text-slate-500'}`}>
-            Add by Affiliate Link
         </button>
     </div>
 

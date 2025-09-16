@@ -26,13 +26,7 @@ export default function ClientLayout({
           </main>
         </div>
       </div>
-      
-      {/* This footer is now "smart" and will render correctly */}
-      {showFooter && (
-        <div className="hidden md:block">
-            <Footer />
-        </div>
-      )}
+      {showFooter && <Footer />}
     </>
   );
 }
