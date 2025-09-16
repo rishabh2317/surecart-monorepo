@@ -52,7 +52,7 @@ function NewCollectionPageComponent() {
   const [showModal, setShowModal] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const [view, setView] = useState<'campaigns' | 'categories' | 'products'>('campaigns');
+  const [view, setView] = useState<'campaigns' | 'categories' | 'products'>('categories');
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [categoryPath, setCategoryPath] = useState<Category[]>([]);
   // This ref is for the main scrollable container of the page
@@ -66,7 +66,7 @@ const selectedCategory = categoryPath[categoryPath.length - 1];
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   // ++ NEW: Create a ref for the scrollable container ++
   const productPanelRef = useRef<HTMLElement>(null);
-  const [browserTab, setBrowserTab] = useState<'categories' | 'link'>('link');
+  const [browserTab, setBrowserTab] = useState<'categories' | 'link'>('categories');
   const [linkUrl, setLinkUrl] = useState('');
   const [linkPreview, setLinkPreview] = useState<any>(null);
   const [isFetchingLink, setIsFetchingLink] = useState(false);
@@ -440,12 +440,13 @@ const sortedAvailableProducts = useMemo(() => {
 
     {/* --- TABS to switch between discovery methods --- */}
     <div className="flex border-b mt-4">
+    <button onClick={() => setBrowserTab('categories')} className={`px-4 py-2 font-semibold ${browserTab === 'categories' ? 'border-b-2 border-teal-500 text-teal-600' : 'text-slate-500'}`}>
+            Browse
+        </button>
     <button onClick={() => setBrowserTab('link')} className={`px-4 py-2 font-semibold ${browserTab === 'link' ? 'border-b-2 border-teal-500 text-teal-600' : 'text-slate-500'}`}>
             Add by Affiliate Link
         </button>
-        <button onClick={() => setBrowserTab('categories')} className={`px-4 py-2 font-semibold ${browserTab === 'categories' ? 'border-b-2 border-teal-500 text-teal-600' : 'text-slate-500'}`}>
-            Browse
-        </button>
+        
     </div>
 
     <div className="flex-grow overflow-y-auto pt-4">
