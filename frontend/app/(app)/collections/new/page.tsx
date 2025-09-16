@@ -66,7 +66,7 @@ const selectedCategory = categoryPath[categoryPath.length - 1];
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   // ++ NEW: Create a ref for the scrollable container ++
   const productPanelRef = useRef<HTMLElement>(null);
-  const [browserTab, setBrowserTab] = useState<'categories' | 'link'>('categories');
+  const [browserTab, setBrowserTab] = useState<'categories' | 'link'>('link');
   const [linkUrl, setLinkUrl] = useState('');
   const [linkPreview, setLinkPreview] = useState<any>(null);
   const [isFetchingLink, setIsFetchingLink] = useState(false);
