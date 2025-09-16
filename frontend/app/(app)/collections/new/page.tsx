@@ -56,7 +56,7 @@ function NewCollectionPageComponent() {
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [categoryPath, setCategoryPath] = useState<Category[]>([]);
   // This ref is for the main scrollable container of the page
-  //const mainPanelRef = useRef<HTMLDivElement>(null);
+  const mainPanelRef = useRef<HTMLDivElement>(null);
 
 
 // `selectedCategory` is now a DERIVED value. It's simply the last item in the path.
@@ -113,6 +113,11 @@ const selectedCategory = categoryPath[categoryPath.length - 1];
     // for the category-first journey.
     enabled: view === 'categories' && !selectedCampaign,
 });
+useEffect(() => {
+  if (mainPanelRef.current) {
+      mainPanelRef.current.scrollTo({ top: 0, behavior: 'instant' });
+  }
+}, []); 
 const fetchMetadataMutation = useMutation({
   mutationFn: fetchUrlMetadata,
   onSuccess: (data) => {
@@ -121,7 +126,7 @@ const fetchMetadataMutation = useMutation({
   },
   onError: (error: any) => {
     // If we get our specific error, show the manual form
-    if (error.error === "MANUAL_ENTRY_REQUIRED") {
+    if (error.message && error.message.toLowerCase().includes("please enter manually")) {
       setShowManualForm(true);
   } else {
         alert(error.message || "An unknown error occurred.");
@@ -360,7 +365,7 @@ const sortedAvailableProducts = useMemo(() => {
         </button>
     }
  />
- <div className="flex-grow flex-1 flex flex-col-reverse md:flex-row overflow-y-auto md:overflow-hidden">
+ <div ref={mainPanelRef} className="flex-grow flex-1 flex flex-col-reverse md:flex-row overflow-y-auto md:overflow-hidden">
         {/* --- LEFT COLUMN: COLLECTION DETAILS (Redesigned) --- */}
         <main className="w-full md:w-1/2 p-6 md:overflow-y-auto">
           <div className="max-w-xl mx-auto">
