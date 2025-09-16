@@ -143,7 +143,7 @@ const fetchMetadataMutation = useMutation({
   },
   onError: (error: any) => {
     // If we get our specific error, show the manual form
-    if (error.message && error.message.toLowerCase().includes("please enter manually")) {
+    if (error.message && error.message.toLowerCase().includes("manually")) {
       setShowManualForm(true);
   } else {
         alert(error.message || "An unknown error occurred.");
