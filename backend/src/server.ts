@@ -44,7 +44,7 @@ const prisma = new PrismaClient();
 const SALT_ROUNDS = 10;
 // Add this at the top of your server.ts file, with other variables
 let aiApiCallCount = 0;
-const AI_API_CALL_LIMIT = 10; // Our own internal monthly limit
+const AI_API_CALL_LIMIT = 100; // Our own internal monthly limit
 // Enhanced CORS configuration
 // World-Class Plugin Registration
 const allowedOrigins = [

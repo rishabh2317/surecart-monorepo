@@ -188,7 +188,7 @@ const CreatorDashboard = ({ user }: { user: any }) => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {collections.map((col: any) => (
-          <div key={col.id} className="bg-white p-5 rounded-xl shadow-md flex flex-col group transition-shadow hover:shadow-lg">
+          <div key={col.id} className="bg-white p-5 rounded-xl shadow-md flex flex-col group transition-shadow hover:shadow-lg border border-teal-100 hover:border-teal-500">
             <Link href={`/collections/${col.id}`}>
               <h3 className="font-semibold text-slate-800 text-lg mb-2 truncate hover:text-teal-600 transition-colors">{col.name}</h3>
             </Link>
