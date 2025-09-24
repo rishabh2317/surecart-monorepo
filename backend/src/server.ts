@@ -49,6 +49,8 @@ const AI_API_CALL_LIMIT = 100; // Our own internal monthly limit
 // World-Class Plugin Registration
 const allowedOrigins = [
     'http://localhost:3000',
+    'https://mystash.in', 
+    'https://www.mystash.in',
     'https://surecart-monorepo.vercel.app', // your deployed frontend
     'https://www.mystash.shop',
   ];
