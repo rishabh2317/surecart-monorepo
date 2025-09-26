@@ -1462,15 +1462,39 @@ try {
         orderBy: { createdAt: 'desc' },
         include: {
             user: { select: { username: true, profileImageUrl: true } },
-            products: { take: 1, orderBy: { displayOrder: 'asc' }, include: { product: { select: { imageUrls: true } } } },
-            _count: { select: { views: true } }
+            products: { 
+                take: 5, 
+                orderBy: { displayOrder: 'asc' }, 
+                include: { 
+                    product: {
+                        select: { 
+                            id: true, name: true, imageUrls: true, baseUrl: true, price: true,
+                            discountPercentage: true, rating: true,
+                            brand: { select: { name: true } }
+                        }
+                    }
+                } 
+            },
+            _count: { select: { views: true, likedBy: true } }
         }
     });
     const response = collections.map(c => ({
         id: c.id, name: c.name, slug: c.slug, author: c.user.username,
         views: c._count.views,
+        likes: c._count.likedBy,
         authorAvatar: c.user.profileImageUrl || `https://placehold.co/100x100/E2E8F0/475569?text=${c.user.username.charAt(0).toUpperCase()}`,
-        coverImage: c.coverImageUrl || c.products[0]?.product.imageUrls[0] || `https://placehold.co/400x300/cccccc/333333?text=${encodeURIComponent(c.name)}`,
+        media: c.media.length > 0 ? c.media : [{ type: 'image', url: c.coverImageUrl || c.products[0]?.product.imageUrls[0] }],
+        products: c.products.map(p => ({
+            id: p.product.id,
+            name: p.product.name,
+            imageUrl: p.product.imageUrls[0],
+            shopUrl: p.product.baseUrl,
+            price: p.product.price,
+            brand: p.product.brand?.name || 'Brand',
+            discountPercentage: p.product.discountPercentage,
+            rating: p.product.rating
+        }))
+        
     }));
     reply.send(response);
 } catch (error) {

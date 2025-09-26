@@ -67,6 +67,8 @@ model Product {
   lastUpdatedAt   DateTime            @default(now()) @updatedAt
   clicks          Click[]
   collections     CollectionProduct[]
+  discountPercentage Int?
+  rating          Float?
   brand           Brand?              @relation(fields: [brandId], references: [id])
   campaigns       CampaignProduct[] 
   categories      ProductCategory[]
@@ -120,6 +122,7 @@ model Collection {
   createdAt     DateTime            @default(now())
   coverImageUrl String?
   description   String?
+  media         Json[]
   clicks        Click[]
   user          User                @relation(fields: [userId], references: [id])
   products      CollectionProduct[]
