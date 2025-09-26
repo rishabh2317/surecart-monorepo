@@ -125,8 +125,8 @@ const ProductCard = ({ product, collectionId }: { product: any, collectionId: st
                     />
                 </div>
                 <div className="p-4 flex-grow flex flex-col">
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{product.brand}</p>
-                    <h3 className="font-bold text-md text-slate-800 flex-grow mt-1">{product.name}</h3>
+                    <p className="text-xs font-bold text-slate-800 truncate">{product.brand}</p>
+                    <h3 className="text-xs text-slate-500 truncate">{product.name}</h3>
                     
                     <div className="mt-4 space-y-2">
                         <button 

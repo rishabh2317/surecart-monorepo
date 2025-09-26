@@ -10,30 +10,90 @@ import {
     likeCollection,
     unlikeCollection,
     followCreator,
-    unfollowCreator
+    unfollowCreator,
+    getFollowStatus,
+    recordClick
 } from '@/lib/api';
 import { useState, useEffect, useMemo } from 'react';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import { useAuth } from '@/lib/auth-context';
 import Link from 'next/link';
-import { Heart, Share2, Eye, UserPlus, Star } from 'lucide-react';
+import { Heart, Share2, Eye, UserPlus, Star, Sparkles, ExternalLink } from 'lucide-react';
 import ShareModal from '@/components/shared/ShareModal';
+import AskAIDrawer from '@/components/shared/AskAIDrawer';
 
 // --- Reusable Components (can be moved to a shared file) ---
 
-const ProductPreviewCard = ({ product }: { product: any }) => (
-    <div className="w-32 flex-shrink-0">
-        <a href={product.shopUrl} target="_blank" rel="noopener noreferrer" className="block bg-white rounded-lg p-2 shadow-sm border border-slate-200">
-            <div className="aspect-square w-full rounded-md overflow-hidden bg-slate-100">
-                <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+const ProductPreviewCard = ({ product, collectionId }: { product: any, collectionId: string }) => {
+
+    const { user } = useAuth();
+    const [isAiDrawerOpen, setIsAiDrawerOpen] = useState(false);
+
+    const recordClickMutation = useMutation({
+        mutationFn: recordClick,
+        onError: (error) => console.error("Failed to record click:", error),
+    });
+
+     // THIS IS THE NEW CLICK HANDLER
+     const handleProductClick = (e: React.MouseEvent) => {
+        e.preventDefault(); // Prevent the link from navigating immediately
+        
+        // Record the click in the background
+        recordClickMutation.mutate({
+            productId: product.id,
+            collectionId: collectionId,
+            userId: user?.id,
+        });
+
+        // Open the external link in a new tab
+        window.open(product.buyUrl, '_blank', 'noopener,noreferrer');
+    };
+
+    return (
+        <>
+            <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-shadow duration-300 flex flex-col overflow-hidden group">
+                <div className="aspect-square w-full overflow-hidden">
+                    <img 
+                        src={product.imageUrl} 
+                        alt={product.name} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    />
+                </div>
+                <div className="p-4 flex-grow flex flex-col">
+                    <p className="text-xs font-bold text-slate-800 truncate">{product.brand}</p>
+                    <h3 className="text-xs text-slate-500 truncate">{product.name}</h3>
+                    
+                    <div className="mt-4 space-y-2">
+                        <button 
+                            onClick={() => setIsAiDrawerOpen(true)}
+                            className="w-full text-sm font-semibold text-teal-600 hover:text-teal-100 flex items-center justify-center space-x-2 py-2 bg-teal-100 rounded-lg hover:bg-teal-50"
+                        >
+                            <Sparkles className="w-4 h-4" />
+                            <span>AI Summary</span>
+                        </button>
+                        
+                        <a 
+                            href={product.buyUrl}
+                            onClick={handleProductClick}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full flex items-center justify-center px-4 py-2 font-semibold text-white bg-slate-800 rounded-lg hover:bg-slate-900"
+                        >
+                            Shop Now
+                            <ExternalLink className="w-4 h-4 ml-2" />
+                        </a>
+                    </div>
+                </div>
             </div>
-            <div className="mt-2">
-                <p className="text-xs font-bold text-slate-800 truncate">{product.brand}</p>
-                <p className="text-xs text-slate-500 truncate">{product.name}</p>
-            </div>
-        </a>
-    </div>
-);
+            <AskAIDrawer
+                productName={product.name}
+                isOpen={isAiDrawerOpen}
+                onClose={() => setIsAiDrawerOpen(false)}
+            />
+        </>
+    );
+}
+
 
 const MediaCarousel = ({ media }: { media: any[] }) => {
     const firstMedia = media[0];
@@ -51,43 +111,88 @@ const PostCard = ({ collection }: { collection: any }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [isLiked, setIsLiked] = useState(collection.isLiked);
     const [likesCount, setLikesCount] = useState(collection.likes);
+    const [isFollowing, setIsFollowing] = useState(collection.isFollowing);
+
     const pageUrl = typeof window !== 'undefined' ? `${window.location.origin}/${collection.author}/${collection.slug}` : '';
 
     const likeMutation = useMutation({
         mutationFn: () => {
             if (!user) throw new Error("Not logged in");
             const payload = { collectionId: collection.id, userId: user.id };
+            // If it is currently liked, we should call 'unlike'.
             return isLiked ? unlikeCollection(payload) : likeCollection(payload);
         },
         onMutate: async () => {
+            await queryClient.cancelQueries({ queryKey: ['homepageFeed'] });
             const previousState = isLiked;
             setIsLiked(!previousState);
             setLikesCount((prev: number) => !previousState ? prev + 1 : prev - 1);
             return { previousState };
         },
         onError: (err, variables, context) => {
+            // Revert on error
             if (context?.previousState !== undefined) {
                 setIsLiked(context.previousState);
                 setLikesCount((prev: number) => context.previousState ? prev + 1 : prev - 1);
             }
         },
         onSettled: () => {
-            queryClient.invalidateQueries({ queryKey: ['creatorCollections', collection.author] });
+            queryClient.invalidateQueries({ queryKey: ['homepageFeed'] });
+        }
+    });
+
+    const followMutation = useMutation({
+        mutationFn: () => {
+            if (!user) throw new Error("Not logged in");
+            const payload = { creatorId: collection.authorId, userId: user.id };
+            return isFollowing ? unfollowCreator(payload) : followCreator(payload);
+        },
+        onMutate: async () => {
+            const previousState = isFollowing;
+            setIsFollowing(!previousState);
+            return { previousState };
+        },
+        onError: (err, variables, context) => {
+            if (context?.previousState !== undefined) setIsFollowing(context.previousState);
+        },
+        onSettled: () => {
+             queryClient.invalidateQueries({ queryKey: ['homepageFeed'] });
         }
     });
 
     const handleLikeClick = () => {
-        if (!user) openAuthModal(`/${collection.author}/${collection.slug}`);
-        else likeMutation.mutate();
+        if (!user) {
+            openAuthModal(`/${collection.author}/${collection.slug}`);
+        } else {
+            likeMutation.mutate();
+        }
     };
+
+    const handleFollowClick = () => {
+      if (!user) openAuthModal(`/${collection.author}`);
+      else followMutation.mutate();
+  }
 
     return (
         <>
             <div className="bg-white sm:rounded-xl sm:border sm:border-slate-200 mb-8 flex flex-col">
+                 {/* Post Header */}
+              <div className="flex sm:hidden items-center justify-between p-3">
+                  <div className="flex items-center space-x-3">
+                      <img src={collection.authorAvatar} alt={collection.author} className="w-8 h-8 rounded-full" />
+                      <Link href={`/${collection.author}`} className="font-bold text-sm text-slate-800 hover:underline">{collection.author}</Link>
+                  </div>
+                  {/* Hide follow button if viewing your own post */}
+                  {user?.id !== collection.authorId && (
+                        <button onClick={handleFollowClick} disabled={followMutation.isPending} className={`text-sm font-bold ${isFollowing ? 'text-slate-500' : 'text-teal-500'}`}>
+                            {isFollowing ? 'Following' : 'Follow'}
+                        </button>
+                    )}
+              </div>
                 <MediaCarousel media={collection.media} />
                 {collection.products && collection.products.length > 0 && (
                     <div className="flex space-x-3 overflow-x-auto p-3"><div className="font-bold text-sm text-slate-800 self-center pr-2">Shop The Look</div>
-                        {collection.products.map((product: any) => <ProductPreviewCard key={product.id} product={product} />)}
+                        {collection.products.map((product: any) => <ProductPreviewCard key={product.id} product={product} collectionId={collection.id}/>)}
                     </div>
                 )}
                 <div className="p-3 flex items-center justify-between border-t border-slate-100">
@@ -97,12 +202,14 @@ const PostCard = ({ collection }: { collection: any }) => {
                             <span className="font-semibold text-sm">{likesCount.toLocaleString()}</span>
                         </button>
                         <button onClick={() => setShowShareModal(true)} className="text-slate-700 hover:text-teal-500"><Share2 className="w-6 h-6" /></button>
-                    </div>
-                    <div className="flex items-center space-x-2 text-slate-500">
-                        <Eye className="w-5 h-5"/>
+                        <div className="flex items-center space-x-2 text-slate-700">
+                        <Eye className="w-6 h-6"/>
                         <span className="font-semibold text-sm">{collection.views.toLocaleString()}</span>
                     </div>
-                </div>
+                  </div>
+                  
+                  <Link href={`/${collection.author}/${collection.slug}`} className="bg-slate-800 text-white font-semibold px-4 py-2 rounded-lg text-sm">Shop All</Link>
+              </div>
                 <div className="px-3 pb-3">
                     <Link href={`/${collection.author}/${collection.slug}`} className="font-bold text-sm text-slate-800 hover:underline">{collection.name}</Link>
                     {collection.description && (
@@ -189,7 +296,8 @@ const RecommendedProductsTab = ({ username }: { username: string }) => {
 // --- MAIN PAGE ---
 export default function CreatorProfilePage() {
     const params = useParams();
-    const { user } = useAuth();
+    const { user, openAuthModal } = useAuth();
+    const queryClient = useQueryClient();
     const username = params.username as string;
     const [activeTab, setActiveTab] = useState('Posts');
 
@@ -199,8 +307,50 @@ export default function CreatorProfilePage() {
         enabled: !!username,
     });
 
+     // --- START: NEW "SMART" FOLLOW LOGIC ---
+   const { data: followStatus } = useQuery({
+    queryKey: ['followStatus', creator?.id, user?.id],
+    queryFn: () => getFollowStatus(creator!.id, user!.id),
+    enabled: !!user && !!creator,
+});
+
+
+const isFollowing = followStatus?.isFollowing ?? false;
+
+
+const followMutation = useMutation({
+    mutationFn: followCreator,
+    onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['followStatus', creator?.id, user?.id] });
+        queryClient.invalidateQueries({ queryKey: ['creatorProfile', username] }); // Refreshes follower count
+    },
+});
+
+
+const unfollowMutation = useMutation({
+    mutationFn: unfollowCreator,
+    onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['followStatus', creator?.id, user?.id] });
+        queryClient.invalidateQueries({ queryKey: ['creatorProfile', username] }); // Refreshes follower count
+    },
+});
+
+const handleFollow = () => {
+    if (!user) {
+        openAuthModal();
+    } else if (creator) {
+        if (isFollowing) {
+            unfollowMutation.mutate({ creatorId: creator.id, userId: user.id });
+        } else {
+            followMutation.mutate({ creatorId: creator.id, userId: user.id });
+        }
+    }
+};
+
+
     if (isLoading) return <div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-16 w-16 border-b-2 border-teal-500"></div></div>;
     if (isError || !creator) return notFound();
+    const isFollowActionPending = followMutation.isPending || unfollowMutation.isPending;
 
     return (
         <div className="bg-white">
@@ -215,7 +365,22 @@ export default function CreatorProfilePage() {
                             <div className="text-center"><p className="font-bold text-xl text-slate-800">{creator._count.followers.toLocaleString()}</p><p className="text-sm text-slate-500">Followers</p></div>
                             <div className="text-center"><p className="font-bold text-xl text-slate-800">{creator.collections.length}</p><p className="text-sm text-slate-500">Collections</p></div>
                         </div>
+                        <div className="mt-6">
+                       <button
+                               onClick={handleFollow}
+                               disabled={isFollowActionPending}
+                               className={`flex items-center justify-center mx-auto space-x-2 px-6 py-3 font-semibold rounded-full transition-colors w-32 ${
+                                   isFollowing
+                                       ? 'bg-slate-200 text-slate-800'
+                                       : 'bg-teal-500 text-white hover:bg-teal-600'
+                               } disabled:bg-slate-300`}
+                           >
+                               <UserPlus className="w-5 h-5" />
+                               <span>{isFollowing ? 'Following' : 'Follow'}</span>
+                           </button>
+                       </div>
                     </div>
+                    
                 </section>
 
                 <div className="border-b border-slate-200">

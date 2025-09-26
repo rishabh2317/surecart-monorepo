@@ -165,12 +165,10 @@ const PostCard = ({ collection }: { collection: any }) => {
               
               {/* Horizontal Product Row */}
               {collection.products && collection.products.length > 0 && (
-                  <div className="flex space-x-3 overflow-x-auto p-3">
-                      {collection.products.map((product: any) => (
-                          <ProductPreviewCard key={product.id} product={product} />
-                      ))}
-                  </div>
-              )}
+                    <div className="flex space-x-3 overflow-x-auto p-3"><div className="font-bold text-sm text-slate-800 self-center pr-2">Shop The Look</div>
+                        {collection.products.map((product: any) => <ProductPreviewCard key={product.id} product={product} />)}
+                    </div>
+                )}
               
               {/* NEW Action Bar at the bottom */}
               <div className="p-3 flex items-center justify-between border-t border-slate-100">
