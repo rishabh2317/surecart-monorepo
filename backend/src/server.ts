@@ -887,53 +887,17 @@ if (!process.env.GEMINI_API_KEY) {
 if (aiApiCallCount >= AI_API_CALL_LIMIT) {
     return reply.code(429).send({ message: "This feature is temporarily unavailable due to high demand. Please try again later." });
 }
-// This is a critical check for production
-if (!process.env.GEMINI_API_KEY) {
-    return reply.code(500).send({ message: "AI service is not configured." });
-}
- const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash"});
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 const prompt = `You are a helpful e-commerce assistant. Your goal is to provide a balanced and concise summary of public reviews for a product. Based on common knowledge and reviews for the product "${productName}", provide a summary with:
 - Three bullet points for "Pros" (what people love).
 - Three bullet points for "Cons" (common complaints or drawbacks).
 - A one-sentence "Best For" recommendation.
 Keep the language neutral and objective.`;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 try {
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    const text = response.text();
+    const text = response.text() ?? "No summary available.";;
     // Increment our counter after a successful call
     aiApiCallCount++;
     reply.send({ summary: text });
@@ -942,6 +906,8 @@ try {
     reply.code(500).send({ message: "Could not generate AI summary." });
 }
 });
+
+
 // --- CREATOR DASHBOARD & COLLECTION MANAGEMENT ---
 server.get('/dashboard/:userId', async (request, reply) => {
 const { userId } = request.params as { userId: string };
