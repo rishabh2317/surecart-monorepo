@@ -95,7 +95,7 @@ const PostCard = ({ collection }: { collection: any }) => {
           await queryClient.cancelQueries({ queryKey: ['homepageFeed'] });
           const previousState = isLiked;
           setIsLiked(!previousState);
-          setLikesCount(prev => !previousState ? prev + 1 : prev - 1);
+          setLikesCount((prev: number) => !previousState ? prev + 1 : prev - 1);
           return { previousState };
       },
       onError: (err, variables, context) => {
