@@ -1551,6 +1551,115 @@ try {
 } catch (error) { server.log.error(error); reply.code(500).send({ message: "Error fetching explore data" }); }
 });
 
+// API 1: Paginated Collections for a Creator's Feed
+server.get('/public/creators/:username/collections', async (request, reply) => {
+    const { username } = request.params as { username: string };
+    const { cursor } = request.query as { cursor?: string };
+
+    try {
+        const collections = await prisma.collection.findMany({
+            take: 5,
+            ...(cursor && {
+                skip: 1,
+                cursor: { id: cursor },
+            }),
+            where: { user: { username } },
+            orderBy: { createdAt: 'desc' },
+            include: {
+                user: { select: { id: true, username: true, profileImageUrl: true } },
+                products: { 
+                    take: 5, 
+                    orderBy: { displayOrder: 'asc' }, 
+                    include: { 
+                        product: {
+                            select: { 
+                                id: true, 
+                                name: true, 
+                                imageUrls: true, 
+                                baseUrl: true, 
+                                price: true,
+                                brand: { select: { name: true } }
+                            }
+                        }
+                    } 
+                },
+                _count: { 
+                    select: { 
+                        views: true, 
+                        likedBy: true 
+                    } 
+                }
+            }
+        });
+        
+        const responseData = collections.map(c => ({
+            id: c.id,
+            name: c.name,
+            slug: c.slug,
+            description: c.description,
+            author: c.user.username,
+            authorId: c.user.id,
+            authorAvatar: c.user.profileImageUrl || `https://placehold.co/100x100/E2E8F0/475569?text=${c.user.username.charAt(0).toUpperCase()}`,
+            media: c.media.length > 0 ? c.media : [{ type: 'image', url: c.coverImageUrl || (c.products[0]?.product.imageUrls[0] || null) }],
+            views: c._count.views,
+            likes: c._count.likedBy,
+            products: c.products.map(p => ({
+                id: p.product.id,
+                name: p.product.name,
+                imageUrl: p.product.imageUrls[0],
+                shopUrl: p.product.baseUrl,
+                price: p.product.price,
+                brand: p.product.brand?.name || 'Brand',
+                discountPercentage: p.product.discountPercentage,
+                rating: p.product.rating
+            }))
+        }));
+
+        reply.send({
+            collections: responseData,
+            nextCursor: collections.length === 5 ? collections[4].id : undefined,
+        });
+
+    } catch (error) {
+        server.log.error(error);
+        reply.code(500).send({ message: "Error fetching creator collections" });
+    }
+});
+
+// API 2: All Unique Products Recommended by a Creator
+server.get('/public/creators/:username/products', async (request, reply) => {
+    const { username } = request.params as { username: string };
+    try {
+        const products = await prisma.product.findMany({
+            where: {
+                collections: {
+                    some: {
+                        collection: {
+                            user: { username }
+                        }
+                    }
+                }
+            },
+            distinct: ['id'],
+            include: {
+                brand: { select: { name: true } }
+            }
+        });
+
+        const responseData = products.map(p => ({
+            id: p.id,
+            name: p.name,
+            imageUrl: p.imageUrls[0],
+            brand: p.brand?.name || "Brand",
+            buyUrl: p.baseUrl
+        }));
+
+        reply.send(responseData);
+    } catch (error) {
+        server.log.error(error);
+        reply.code(500).send({ message: "Error fetching creator products" });
+    }
+});
 
 
 

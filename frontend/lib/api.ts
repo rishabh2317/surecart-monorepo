@@ -179,3 +179,12 @@ export const getFeedInteractionStatus = async (collectionIds: string[], userId: 
         body: JSON.stringify({ collectionIds }),
     });
 };
+
+export const getCreatorCollections = (username: string, cursor?: string) => {
+    const url = cursor ? `/public/creators/${username}/collections?cursor=${cursor}` : `/public/creators/${username}/collections`;
+    return fetcher(url);
+};
+
+export const getCreatorProducts = (username: string) => {
+    return fetcher(`/public/creators/${username}/products`);
+};
