@@ -1578,6 +1578,8 @@ server.get('/public/creators/:username/collections', async (request, reply) => {
                                 imageUrls: true, 
                                 baseUrl: true, 
                                 price: true,
+                                discountPercentage: true, 
+                                rating: true,
                                 brand: { select: { name: true } }
                             }
                         }

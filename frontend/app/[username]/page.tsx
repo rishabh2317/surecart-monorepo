@@ -156,7 +156,7 @@ const PostsTab = ({ username }: { username: string }) => {
             next={fetchNextPage}
             hasMore={hasNextPage || false}
             loader={<p className="text-center py-4">Loading more...</p>}
-            endMessage={<p className="text-center py-4 text-slate-500">You've reached the end!</p>}
+            endMessage={<p className="text-center py-4 text-slate-500">You have reached the end!</p>}
         >
             {collectionsWithStatus.map((col: any) => <PostCard key={col.id} collection={col} />)}
         </InfiniteScroll>
