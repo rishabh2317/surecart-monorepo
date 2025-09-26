@@ -1644,7 +1644,9 @@ server.get('/public/creators/:username/products', async (request, reply) => {
             },
             distinct: ['id'],
             include: {
-                brand: { select: { name: true } }
+                brand: { select: { name: true } },
+                collections: {  // 👈 include the collections relation
+                    select: { collectionId: true }}
             }
         });
 
@@ -1653,7 +1655,8 @@ server.get('/public/creators/:username/products', async (request, reply) => {
             name: p.name,
             imageUrl: p.imageUrls[0],
             brand: p.brand?.name || "Brand",
-            buyUrl: p.baseUrl
+            buyUrl: p.baseUrl,
+            collectionId: p.collections[0]?.collectionId || null  // 👈 take the first one
         }));
 
         reply.send(responseData);

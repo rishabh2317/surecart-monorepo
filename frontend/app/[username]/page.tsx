@@ -21,58 +21,79 @@ import Link from 'next/link';
 import { Heart, Share2, Eye, UserPlus, Star, Sparkles, ExternalLink } from 'lucide-react';
 import ShareModal from '@/components/shared/ShareModal';
 import AskAIDrawer from '@/components/shared/AskAIDrawer';
+import { collection } from 'firebase/firestore/lite';
 
 // --- Reusable Components (can be moved to a shared file) ---
 
-const ProductPreviewCard = ({ product, collectionId }: { product: any, collectionId: string }) => {
+const ProductPreviewCard = ({ product }: { product: any }) => (
+    
+    <div className="w-32 flex-shrink-0">
+        <a href={product.buyUrl} target="_blank" rel="noopener noreferrer" className="block bg-white rounded-lg p-2 shadow-sm border border-slate-200">
+            <div className="aspect-square w-full rounded-md overflow-hidden bg-slate-100">
+                <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+            </div>
+            <div className="mt-2">
+                <p className="text-xs font-bold text-slate-800 truncate">{product.brand}</p>
+                <p className="text-xs text-slate-500 truncate">{product.name}</p>
+            </div>
+        </a>
+    </div>
+);
+
+const RecommendedProductCard = ({ product, collectionId }: { product: any, collectionId: string }) => {
+
 
     const { user } = useAuth();
     const [isAiDrawerOpen, setIsAiDrawerOpen] = useState(false);
-
+ 
+ 
     const recordClickMutation = useMutation({
         mutationFn: recordClick,
         onError: (error) => console.error("Failed to record click:", error),
     });
-
+ 
+ 
      // THIS IS THE NEW CLICK HANDLER
      const handleProductClick = (e: React.MouseEvent) => {
         e.preventDefault(); // Prevent the link from navigating immediately
-        
+       
         // Record the click in the background
         recordClickMutation.mutate({
             productId: product.id,
             collectionId: collectionId,
             userId: user?.id,
         });
-
+ 
+ 
         // Open the external link in a new tab
         window.open(product.buyUrl, '_blank', 'noopener,noreferrer');
     };
-
+ 
+ 
     return (
         <>
             <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-shadow duration-300 flex flex-col overflow-hidden group">
                 <div className="aspect-square w-full overflow-hidden">
-                    <img 
-                        src={product.imageUrl} 
-                        alt={product.name} 
+                    <img
+                        src={product.imageUrl}
+                        alt={product.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                     />
                 </div>
                 <div className="p-4 flex-grow flex flex-col">
                     <p className="text-xs font-bold text-slate-800 truncate">{product.brand}</p>
                     <h3 className="text-xs text-slate-500 truncate">{product.name}</h3>
-                    
+                   
                     <div className="mt-4 space-y-2">
-                        <button 
+                        <button
                             onClick={() => setIsAiDrawerOpen(true)}
                             className="w-full text-sm font-semibold text-teal-600 hover:text-teal-100 flex items-center justify-center space-x-2 py-2 bg-teal-100 rounded-lg hover:bg-teal-50"
                         >
                             <Sparkles className="w-4 h-4" />
                             <span>AI Summary</span>
                         </button>
-                        
-                        <a 
+                       
+                        <a
                             href={product.buyUrl}
                             onClick={handleProductClick}
                             target="_blank"
@@ -92,8 +113,8 @@ const ProductPreviewCard = ({ product, collectionId }: { product: any, collectio
             />
         </>
     );
-}
-
+ }
+ 
 
 const MediaCarousel = ({ media }: { media: any[] }) => {
     const firstMedia = media[0];
@@ -192,7 +213,7 @@ const PostCard = ({ collection }: { collection: any }) => {
                 <MediaCarousel media={collection.media} />
                 {collection.products && collection.products.length > 0 && (
                     <div className="flex space-x-3 overflow-x-auto p-3"><div className="font-bold text-sm text-slate-800 self-center pr-2">Shop The Look</div>
-                        {collection.products.map((product: any) => <ProductPreviewCard key={product.id} product={product} collectionId={collection.id}/>)}
+                        {collection.products.map((product: any) => <ProductPreviewCard key={product.id} product={product} />)}
                     </div>
                 )}
                 <div className="p-3 flex items-center justify-between border-t border-slate-100">
@@ -281,13 +302,11 @@ const RecommendedProductsTab = ({ username }: { username: string }) => {
     return (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {products.map((product: any) => (
-                <div key={product.id} className="bg-white p-4 rounded-xl shadow-sm group">
-                    <div className="aspect-square w-full bg-slate-100 rounded-lg overflow-hidden mb-4">
-                        <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
-                    </div>
-                    <h3 className="font-semibold text-slate-800 truncate">{product.name}</h3>
-                    <p className="text-sm text-slate-500">{product.brand}</p>
-                </div>
+                <RecommendedProductCard
+                key={product.id}
+                product={product}
+                collectionId={product.collectionId} // or another id if you have one
+            />
             ))}
         </div>
     );
