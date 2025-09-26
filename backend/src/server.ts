@@ -1486,7 +1486,7 @@ try {
         take: 50, // A reasonable limit for the initial feed
         orderBy: { createdAt: 'desc' },
         include: {
-            user: { select: { username: true, profileImageUrl: true } },
+            user: { select: { username: true, profileImageUrl: true, id: true  } },
             products: { 
                 take: 5, 
                 orderBy: { displayOrder: 'asc' }, 
@@ -1502,13 +1502,10 @@ try {
             },
             _count: { select: { views: true, likedBy: true } }
         },
-        select: {
-            id: true, name: true, slug: true, description: true, // <-- Ensure description is selected
-            user: true, products: true, _count: true, media: true, coverImageUrl: true, createdAt: true, userId: true
-        }
     });
     const response = collections.map(c => ({
         id: c.id, name: c.name, slug: c.slug, description: c.description, author: c.user.username,
+        authorId: c.user.id,
         views: c._count.views,
         likes: c._count.likedBy,
         authorAvatar: c.user.profileImageUrl || `https://placehold.co/100x100/E2E8F0/475569?text=${c.user.username.charAt(0).toUpperCase()}`,
