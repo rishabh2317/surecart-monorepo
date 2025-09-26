@@ -616,7 +616,32 @@ try {
 
 
 
+server.post('/users/:userId/feed-status', async (request, reply) => {
+    const { userId } = request.params as { userId: string };
+    const { collectionIds } = request.body as { collectionIds: string[] };
 
+    try {
+        const liked = await prisma.userLikes.findMany({
+            where: { userId, collectionId: { in: collectionIds } },
+            select: { collectionId: true }
+        });
+
+        // This is a placeholder for follow status logic if needed on the feed
+        // For now, we focus on likes.
+        
+        const likedSet = new Set(liked.map(l => l.collectionId));
+
+        const statuses = collectionIds.reduce((acc, id) => {
+            acc[id] = { isLiked: likedSet.has(id) };
+            return acc;
+        }, {} as Record<string, { isLiked: boolean }>);
+
+        reply.send(statuses);
+    } catch (error) {
+        server.log.error(error);
+        reply.code(500).send({ message: "Error fetching feed status" });
+    }
+});
 
 
 // --- FOLLOW / UNFOLLOW ROUTES ---

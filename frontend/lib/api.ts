@@ -154,3 +154,28 @@ export const recordCollectionView = async (data: { collectionId: string; userId?
         body: JSON.stringify({ userId: data.userId }),
     });
 };
+export const likeCollection = async ({ collectionId, userId }: { collectionId: string, userId: string }) => {
+    return fetcher(`/collections/${collectionId}/like`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+    });
+};
+
+export const unlikeCollection = async ({ collectionId, userId }: { collectionId: string, userId: string }) => {
+    return fetcher(`/collections/${collectionId}/unlike`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+    });
+};
+
+// We also need to fetch the initial status for a batch of collections
+export const getFeedInteractionStatus = async (collectionIds: string[], userId: string) => {
+    if (!userId || collectionIds.length === 0) return {};
+    return fetcher(`/users/${userId}/feed-status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ collectionIds }),
+    });
+};

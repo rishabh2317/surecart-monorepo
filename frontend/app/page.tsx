@@ -1,10 +1,18 @@
 'use client';
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/lib/config';
-import { Heart, MessageCircle, Share2, MoreHorizontal, Star } from 'lucide-react';
-import { useState } from 'react';
+import { Heart, MessageCircle, Share2, MoreHorizontal, Star, Eye } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import {  
+  likeCollection, 
+  unlikeCollection,
+  followCreator,
+  unfollowCreator,
+  getFeedInteractionStatus 
+} from '@/lib/api';
 import ShareModal from '@/components/shared/ShareModal';
+import { useAuth } from '@/lib/auth-context';
 
 async function getHomepageFeed() {
     const res = await fetch(`${API_BASE_URL}/public/home`);
@@ -64,12 +72,48 @@ const MediaCarousel = ({ media }: { media: any[] }) => {
 
 // The main PostCard component, styled like Instagram
 const PostCard = ({ collection }: { collection: any }) => {
-  const [showShareModal, setShowShareModal] = useState(false);
-  const pageUrl = typeof window !== 'undefined' ? `${window.location.origin}/${collection.author}/${collection.slug}` : '';
+  const { user, openAuthModal } = useAuth();
+    const queryClient = useQueryClient();
+    const [showShareModal, setShowShareModal] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(false);
+    
+    // State for local, optimistic updates
+    const [isLiked, setIsLiked] = useState(collection.isLiked);
+    const [likesCount, setLikesCount] = useState(collection.likes);
 
+    const pageUrl = typeof window !== 'undefined' ? `${window.location.origin}/${collection.author}/${collection.slug}` : '';
+
+    const likeMutation = useMutation({
+        mutationFn: () => {
+            if (!user) throw new Error("Not logged in");
+            const payload = { collectionId: collection.id, userId: user.id };
+            return isLiked ? unlikeCollection(payload) : likeCollection(payload);
+        },
+        onMutate: () => {
+            // Optimistic update
+            setIsLiked(!isLiked);
+            setLikesCount((prev: number) => isLiked ? prev - 1 : prev + 1);
+        },
+        onError: () => {
+            // Revert on error
+            setIsLiked(collection.isLiked);
+            setLikesCount(collection.likes);
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ['homepageFeed'] });
+        }
+    });
+
+    const handleLikeClick = () => {
+        if (!user) {
+            openAuthModal(`/${collection.author}/${collection.slug}`);
+        } else {
+            likeMutation.mutate();
+        }
+    };
   return (
       <>
-          <div className="bg-white sm:rounded-xl sm:border sm:border-slate-200 mb-8 flex flex-col">
+          <div className="bg-white mb-8">
               {/* Post Header */}
               <div className="flex sm:hidden items-center justify-between p-3">
                   <div className="flex items-center space-x-3">
@@ -94,19 +138,33 @@ const PostCard = ({ collection }: { collection: any }) => {
               {/* NEW Action Bar at the bottom */}
               <div className="p-3 flex items-center justify-between border-t border-slate-100">
                   <div className="flex items-center space-x-4">
-                      <button className="flex items-center space-x-2 text-slate-700 hover:text-red-500"><Heart className="w-6 h-6" /></button>
+                  <button onClick={handleLikeClick} className="flex items-center space-x-2 text-slate-700 hover:text-red-500">
+                            <Heart className={`w-6 h-6 ${isLiked ? 'text-red-500 fill-current' : ''}`} />
+                            <span className="font-semibold text-sm">{likesCount.toLocaleString()}</span>
+                        </button>
                       <button onClick={() => setShowShareModal(true)} className="flex items-center space-x-2 text-slate-700 hover:text-teal-500"><Share2 className="w-6 h-6" /></button>
                   </div>
+                  <div className="flex items-center space-x-2 text-slate-500">
+                        <Eye className="w-5 h-5"/>
+                        <span className="font-semibold text-sm">{collection.views.toLocaleString()}</span>
+                    </div>
                   <Link href={`/${collection.author}/${collection.slug}`} className="bg-slate-800 text-white font-semibold px-4 py-2 rounded-lg text-sm">Shop All</Link>
               </div>
               
               {/* Engagement Stats */}
               <div className="px-3 pb-3">
-                  <p className="font-semibold text-sm text-slate-800">{collection.likes.toLocaleString()} likes  •  {collection.views.toLocaleString()} Views</p>
-                  <p className="text-sm text-slate-700 mt-1 line-clamp-2">
-                      <span className="font-bold">{collection.author}</span> {collection.description}
-                  </p>
-              </div>
+                    <Link href={`/${collection.author}/${collection.slug}`} className="font-bold text-sm text-slate-800 hover:underline">
+                        {collection.name}
+                    </Link>
+                    <p className={`text-sm text-slate-700 mt-1 ${!isExpanded && 'line-clamp-2'}`}>
+                        {collection.description}
+                    </p>
+                    {collection.description && collection.description.length > 100 && ( // Simple length check
+                        <button onClick={() => setIsExpanded(!isExpanded)} className="text-sm text-slate-500 font-semibold mt-1">
+                            {isExpanded ? '...see less' : 'see more'}
+                        </button>
+                    )}
+                </div>
           </div>
           {/* The ShareModal is now connected */}
           <ShareModal url={pageUrl} isOpen={showShareModal} onClose={() => setShowShareModal(false)} />
@@ -116,15 +174,33 @@ const PostCard = ({ collection }: { collection: any }) => {
   
 
 export default function HomePage() {
-    const { data: collections = [], isLoading } = useQuery({ queryKey: ['homepageFeed'], queryFn: getHomepageFeed });
+  const { user } = useAuth();
+  const { data: collections = [], isLoading } = useQuery({ 
+      queryKey: ['homepageFeed'], 
+      queryFn: getHomepageFeed 
+  });
 
-    return (
-        <div className="w-full max-w-lg mx-auto py-4 sm:py-8">
-            {isLoading ? <div className="text-center">Loading feed...</div> : (
-                <div>
-                    {collections.map((col: any) => <PostCard key={col.id} collection={col} />)}
-                </div>
-            )}
-        </div>
-    );
+  const { data: interactionStatus } = useQuery({
+      queryKey: ['feedInteractionStatus', collections.map((c:any) => c.id), user?.id],
+      queryFn: () => getFeedInteractionStatus(collections.map((c:any) => c.id), user!.id),
+      enabled: !!user && collections.length > 0,
+  });
+
+  const collectionsWithStatus = useMemo(() => {
+      if (!interactionStatus) return collections;
+      return collections.map((col: any) => ({
+          ...col,
+          isLiked: interactionStatus[col.id]?.isLiked || false,
+      }));
+  }, [collections, interactionStatus]);
+
+  return (
+      <div className="w-full max-w-lg mx-auto sm:py-8">
+          {isLoading ? <div className="text-center">Loading feed...</div> : (
+              <div>
+                  {collectionsWithStatus.map((col: any) => <PostCard key={col.id} collection={col} />)}
+              </div>
+          )}
+      </div>
+  );
 }
