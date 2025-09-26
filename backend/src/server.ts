@@ -1501,10 +1501,14 @@ try {
                 } 
             },
             _count: { select: { views: true, likedBy: true } }
+        },
+        select: {
+            id: true, name: true, slug: true, description: true, // <-- Ensure description is selected
+            user: true, products: true, _count: true, media: true, coverImageUrl: true, createdAt: true, userId: true
         }
     });
     const response = collections.map(c => ({
-        id: c.id, name: c.name, slug: c.slug, author: c.user.username,
+        id: c.id, name: c.name, slug: c.slug, description: c.description, author: c.user.username,
         views: c._count.views,
         likes: c._count.likedBy,
         authorAvatar: c.user.profileImageUrl || `https://placehold.co/100x100/E2E8F0/475569?text=${c.user.username.charAt(0).toUpperCase()}`,

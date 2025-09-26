@@ -80,29 +80,56 @@ const PostCard = ({ collection }: { collection: any }) => {
     // State for local, optimistic updates
     const [isLiked, setIsLiked] = useState(collection.isLiked);
     const [likesCount, setLikesCount] = useState(collection.likes);
+    const [isFollowing, setIsFollowing] = useState(collection.isFollowing);
 
     const pageUrl = typeof window !== 'undefined' ? `${window.location.origin}/${collection.author}/${collection.slug}` : '';
 
     const likeMutation = useMutation({
-        mutationFn: () => {
-            if (!user) throw new Error("Not logged in");
-            const payload = { collectionId: collection.id, userId: user.id };
-            return isLiked ? unlikeCollection(payload) : likeCollection(payload);
-        },
-        onMutate: () => {
-            // Optimistic update
-            setIsLiked(!isLiked);
-            setLikesCount((prev: number) => isLiked ? prev - 1 : prev + 1);
-        },
-        onError: () => {
-            // Revert on error
-            setIsLiked(collection.isLiked);
-            setLikesCount(collection.likes);
-        },
-        onSettled: () => {
-            queryClient.invalidateQueries({ queryKey: ['homepageFeed'] });
-        }
-    });
+      mutationFn: () => {
+          if (!user) throw new Error("Not logged in");
+          const payload = { collectionId: collection.id, userId: user.id };
+          // If it is currently liked, we should call 'unlike'.
+          return isLiked ? unlikeCollection(payload) : likeCollection(payload);
+      },
+      onMutate: async () => {
+          await queryClient.cancelQueries({ queryKey: ['homepageFeed'] });
+          const previousState = isLiked;
+          setIsLiked(!previousState);
+          setLikesCount(prev => !previousState ? prev + 1 : prev - 1);
+          return { previousState };
+      },
+      onError: (err, variables, context) => {
+          // Revert on error
+          if (context?.previousState !== undefined) {
+              setIsLiked(context.previousState);
+              setLikesCount((prev: number) => context.previousState ? prev + 1 : prev - 1);
+          }
+      },
+      onSettled: () => {
+          queryClient.invalidateQueries({ queryKey: ['homepageFeed'] });
+      }
+  });
+
+  const followMutation = useMutation({
+    mutationFn: () => {
+        if (!user) throw new Error("Not logged in");
+        const payload = { creatorId: collection.authorId, userId: user.id };
+        return isFollowing ? unfollowCreator(payload) : followCreator(payload);
+    },
+    onMutate: async () => {
+        const previousState = isFollowing;
+        setIsFollowing(!previousState);
+        return { previousState };
+    },
+    onError: (err, variables, context) => {
+        if (context?.previousState !== undefined) setIsFollowing(context.previousState);
+    },
+    onSettled: () => {
+         queryClient.invalidateQueries({ queryKey: ['homepageFeed'] });
+    }
+});
+
+
 
     const handleLikeClick = () => {
         if (!user) {
@@ -111,6 +138,11 @@ const PostCard = ({ collection }: { collection: any }) => {
             likeMutation.mutate();
         }
     };
+
+    const handleFollowClick = () => {
+      if (!user) openAuthModal(`/${collection.author}`);
+      else followMutation.mutate();
+  }
   return (
       <>
           <div className="bg-white mb-8">
@@ -120,7 +152,12 @@ const PostCard = ({ collection }: { collection: any }) => {
                       <img src={collection.authorAvatar} alt={collection.author} className="w-8 h-8 rounded-full" />
                       <Link href={`/${collection.author}`} className="font-bold text-sm text-slate-800 hover:underline">{collection.author}</Link>
                   </div>
-                  <button className="text-sm font-bold text-teal-500 hover:text-teal-600">Follow</button>
+                  {/* Hide follow button if viewing your own post */}
+                  {user?.id !== collection.authorId && (
+                        <button onClick={handleFollowClick} disabled={followMutation.isPending} className={`text-sm font-bold ${isFollowing ? 'text-slate-500' : 'text-teal-500'}`}>
+                            {isFollowing ? 'Following' : 'Follow'}
+                        </button>
+                    )}
               </div>
 
               {/* Main Media */}
@@ -143,11 +180,12 @@ const PostCard = ({ collection }: { collection: any }) => {
                             <span className="font-semibold text-sm">{likesCount.toLocaleString()}</span>
                         </button>
                       <button onClick={() => setShowShareModal(true)} className="flex items-center space-x-2 text-slate-700 hover:text-teal-500"><Share2 className="w-6 h-6" /></button>
-                  </div>
-                  <div className="flex items-center space-x-2 text-slate-500">
-                        <Eye className="w-5 h-5"/>
+                      <div className="flex items-center space-x-2 text-slate-700">
+                        <Eye className="w-6 h-6"/>
                         <span className="font-semibold text-sm">{collection.views.toLocaleString()}</span>
                     </div>
+                  </div>
+                  
                   <Link href={`/${collection.author}/${collection.slug}`} className="bg-slate-800 text-white font-semibold px-4 py-2 rounded-lg text-sm">Shop All</Link>
               </div>
               
@@ -156,13 +194,17 @@ const PostCard = ({ collection }: { collection: any }) => {
                     <Link href={`/${collection.author}/${collection.slug}`} className="font-bold text-sm text-slate-800 hover:underline">
                         {collection.name}
                     </Link>
-                    <p className={`text-sm text-slate-700 mt-1 ${!isExpanded && 'line-clamp-2'}`}>
-                        {collection.description}
-                    </p>
-                    {collection.description && collection.description.length > 100 && ( // Simple length check
-                        <button onClick={() => setIsExpanded(!isExpanded)} className="text-sm text-slate-500 font-semibold mt-1">
-                            {isExpanded ? '...see less' : 'see more'}
-                        </button>
+                    {collection.description && (
+                        <>
+                            <p className={`text-sm text-slate-700 mt-1 ${!isExpanded && 'line-clamp-2'}`}>
+                                {collection.description}
+                            </p>
+                            {collection.description.length > 100 && (
+                                <button onClick={() => setIsExpanded(!isExpanded)} className="text-sm text-slate-500 font-semibold mt-1">
+                                    {isExpanded ? '...see less' : 'see more'}
+                                </button>
+                            )}
+                        </>
                     )}
                 </div>
           </div>
