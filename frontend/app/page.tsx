@@ -271,7 +271,7 @@ export default function HomePage() {
                   next={fetchNextPage}
                   hasMore={hasNextPage || false}
                   loader={<p className="text-center py-4">Loading more...</p>}
-                  endMessage={<p className-="text-center py-4 text-slate-500">You've seen it all!</p>}
+                  endMessage={<p className-="text-center py-4 text-slate-500">You have seen it all!</p>}
               >
                   {collectionsWithStatus.map((col: any) => (
                       <PostCard 
