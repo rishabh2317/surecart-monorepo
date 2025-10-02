@@ -1447,9 +1447,14 @@ try {
 
 // NEW: This powers the Pinterest-style infinite feed on the homepage
 server.get('/public/home', async (request: FastifyRequest, reply: FastifyReply) => {
+    const { cursor } = request.query as { cursor?: string };
 try {
     const collections = await prisma.collection.findMany({
-        take: 50, // A reasonable limit for the initial feed
+        take: 5, // A reasonable limit for the initial feed
+        ...(cursor && {
+            skip: 1, // Skip the cursor itself
+            cursor: { id: cursor },
+        }),
         orderBy: { createdAt: 'desc' },
         include: {
             user: { select: { username: true, profileImageUrl: true, id: true  } },
@@ -1488,7 +1493,10 @@ try {
         }))
         
     }));
-    reply.send(response);
+    reply.send({
+        collections: response,
+        nextCursor: collections.length === 5 ? collections[4].id : undefined,
+    });
 } catch (error) {
     server.log.error(error);
     reply.code(500).send({ message: "Error fetching homepage data" });

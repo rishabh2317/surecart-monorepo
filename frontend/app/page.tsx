@@ -1,10 +1,12 @@
 'use client';
 import Link from 'next/link';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/lib/config';
 import { Heart, MessageCircle, Share2, MoreHorizontal, Star, Eye } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {  
+  getHomepageFeed,
+  getBulkFollowStatus,
   likeCollection, 
   unlikeCollection,
   followCreator,
@@ -13,12 +15,8 @@ import {
 } from '@/lib/api';
 import ShareModal from '@/components/shared/ShareModal';
 import { useAuth } from '@/lib/auth-context';
+import InfiniteScroll from 'react-infinite-scroll-component';
 
-async function getHomepageFeed() {
-    const res = await fetch(`${API_BASE_URL}/public/home`);
-    if (!res.ok) return [];
-    return res.json();
-}
 
 // A small, sleek product card for the horizontal row
 const ProductPreviewCard = ({ product }: { product: any }) => (
@@ -69,9 +67,12 @@ const MediaCarousel = ({ media }: { media: any[] }) => {
     );
 };
 
-
+interface PostCardProps {
+  collection: any;
+  isFollowing: boolean;
+}
 // The main PostCard component, styled like Instagram
-const PostCard = ({ collection }: { collection: any }) => {
+const PostCard = ({ collection, isFollowing: initialIsFollowing }: PostCardProps) => {
   const { user, openAuthModal } = useAuth();
     const queryClient = useQueryClient();
     const [showShareModal, setShowShareModal] = useState(false);
@@ -83,6 +84,11 @@ const PostCard = ({ collection }: { collection: any }) => {
     const [isFollowing, setIsFollowing] = useState(collection.isFollowing);
 
     const pageUrl = typeof window !== 'undefined' ? `${window.location.origin}/${collection.author}/${collection.slug}` : '';
+
+    useEffect(() => {
+      setIsFollowing(initialIsFollowing);
+  }, [initialIsFollowing]);
+
 
     const likeMutation = useMutation({
       mutationFn: () => {
@@ -117,17 +123,16 @@ const PostCard = ({ collection }: { collection: any }) => {
         return isFollowing ? unfollowCreator(payload) : followCreator(payload);
     },
     onMutate: async () => {
-        const previousState = isFollowing;
-        setIsFollowing(!previousState);
-        return { previousState };
+        setIsFollowing(!isFollowing);
     },
-    onError: (err, variables, context) => {
-        if (context?.previousState !== undefined) setIsFollowing(context.previousState);
+    onError: () => {
+        setIsFollowing(initialIsFollowing);
     },
-    onSettled: () => {
-         queryClient.invalidateQueries({ queryKey: ['homepageFeed'] });
+    onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['followStatus'] });
     }
 });
+
 
 
 
@@ -215,31 +220,67 @@ const PostCard = ({ collection }: { collection: any }) => {
 
 export default function HomePage() {
   const { user } = useAuth();
-  const { data: collections = [], isLoading } = useQuery({ 
-      queryKey: ['homepageFeed'], 
-      queryFn: getHomepageFeed 
+
+  // Step 1: Fetch paginated collections using useInfiniteQuery
+  const { 
+      data, 
+      fetchNextPage, 
+      hasNextPage, 
+      isLoading 
+  } = useInfiniteQuery({
+      queryKey: ['homepageFeed'],
+      queryFn: ({ pageParam }) => getHomepageFeed(pageParam),
+      getNextPageParam: (lastPage: any) => lastPage.nextCursor,
+      initialPageParam: undefined,
   });
 
-  const { data: interactionStatus } = useQuery({
-      queryKey: ['feedInteractionStatus', collections.map((c:any) => c.id), user?.id],
-      queryFn: () => getFeedInteractionStatus(collections.map((c:any) => c.id), user!.id),
-      enabled: !!user && collections.length > 0,
+  // Step 2: Flatten the pages of collections into a single array
+  const collections = useMemo(() => 
+      data?.pages.flatMap(page => page.collections) ?? []
+  , [data]);
+
+  // Step 3: Get all unique author IDs from the currently loaded collections
+  const authorIds = useMemo(() => 
+      [...new Set(collections.map((c: any) => c.authorId).filter(id => id))]
+  , [collections]);
+
+  // Step 4: Fetch the follow status for all visible authors in a single bulk request
+  const { data: followStatusMap = {} } = useQuery({
+      queryKey: ['followStatus', authorIds, user?.id],
+      queryFn: () => getBulkFollowStatus(authorIds, user!.id),
+      enabled: !!user && authorIds.length > 0,
+      placeholderData: {}, // Prevent flashes of incorrect state
   });
 
+  // Step 5: Merge the follow status and like status into the collections array
   const collectionsWithStatus = useMemo(() => {
-      if (!interactionStatus) return collections;
       return collections.map((col: any) => ({
           ...col,
-          isLiked: interactionStatus[col.id]?.isLiked || false,
+          // isLiked logic would also be merged here
+          isFollowing: followStatusMap[col.authorId]?.isFollowing || false,
       }));
-  }, [collections, interactionStatus]);
+  }, [collections, followStatusMap]);
 
   return (
       <div className="w-full max-w-lg mx-auto sm:py-8">
-          {isLoading ? <div className="text-center">Loading feed...</div> : (
-              <div>
-                  {collectionsWithStatus.map((col: any) => <PostCard key={col.id} collection={col} />)}
-              </div>
+          {isLoading ? (
+              <div className="text-center p-8">Loading feed...</div>
+          ) : (
+              <InfiniteScroll
+                  dataLength={collectionsWithStatus.length}
+                  next={fetchNextPage}
+                  hasMore={hasNextPage || false}
+                  loader={<p className="text-center py-4">Loading more...</p>}
+                  endMessage={<p className-="text-center py-4 text-slate-500">You've seen it all!</p>}
+              >
+                  {collectionsWithStatus.map((col: any) => (
+                      <PostCard 
+                          key={col.id} 
+                          collection={col} 
+                          isFollowing={col.isFollowing} 
+                      />
+                  ))}
+              </InfiniteScroll>
           )}
       </div>
   );

@@ -374,32 +374,55 @@ const handleFollow = () => {
     return (
         <div className="bg-white">
             <main>
-                <section className="text-center py-12 border-b border-slate-200">
-                    <div className="container mx-auto px-4">
-                        <img src={creator.profileImageUrl || `https://placehold.co/100x100/E2E8F0/475569?text=${creator.username.charAt(0).toUpperCase()}`} alt={creator.username} className="w-24 h-24 rounded-full mx-auto shadow-lg" />
-                        <h1 className="mt-4 text-4xl font-extrabold text-slate-900 tracking-tight">{creator.fullName || creator.username}</h1>
-                        <p className="mt-2 text-slate-600">@{creator.username}</p>
-                        {creator.bio && <p className="mt-4 max-w-xl mx-auto text-md text-slate-700">{creator.bio}</p>}
-                        <div className="mt-6 flex justify-center items-center space-x-6">
-                            <div className="text-center"><p className="font-bold text-xl text-slate-800">{creator._count.followers.toLocaleString()}</p><p className="text-sm text-slate-500">Followers</p></div>
-                            <div className="text-center"><p className="font-bold text-xl text-slate-800">{creator.collections.length}</p><p className="text-sm text-slate-500">Collections</p></div>
+            <section className="container mx-auto p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center">
+                        {/* Profile Picture */}
+                        <div className="flex-shrink-0 mb-4 sm:mb-0 sm:mr-8">
+                            <img 
+                                src={creator.profileImageUrl || `https://placehold.co/150x150/E2E8F0/475569?text=${creator.username.charAt(0).toUpperCase()}`} 
+                                alt={creator.username} 
+                                className="w-24 h-24 sm:w-32 sm:h-32 rounded-full mx-auto shadow-lg" 
+                            />
                         </div>
-                        <div className="mt-6">
-                       <button
-                               onClick={handleFollow}
-                               disabled={isFollowActionPending}
-                               className={`flex items-center justify-center mx-auto space-x-2 px-6 py-3 font-semibold rounded-full transition-colors w-32 ${
-                                   isFollowing
-                                       ? 'bg-slate-200 text-slate-800'
-                                       : 'bg-teal-500 text-white hover:bg-teal-600'
-                               } disabled:bg-slate-300`}
-                           >
-                               <UserPlus className="w-5 h-5" />
-                               <span>{isFollowing ? 'Following' : 'Follow'}</span>
-                           </button>
-                       </div>
+
+                        {/* Profile Info */}
+                        <div className="flex-grow">
+                            <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4">
+                                <h1 className="text-2xl font-light text-slate-800">{creator.username}</h1>
+                                {user?.id !== creator.id && (
+                                    <button 
+                                        onClick={handleFollow} 
+                                        disabled={followMutation.isPending}
+                                        className={`px-6 py-2 font-semibold rounded-lg text-sm transition-colors ${
+                                            isFollowing 
+                                                ? 'bg-slate-200 text-slate-800' 
+                                                : 'bg-teal-500 text-white hover:bg-teal-600'
+                                        } disabled:bg-slate-300`}
+                                    >
+                                        {isFollowing ? 'Following' : 'Follow'}
+                                    </button>
+                                )}
+                            </div>
+                            
+                            {/* Stats */}
+                            <div className="flex justify-center sm:justify-start items-center space-x-6 mt-4">
+                                <div className="text-center sm:text-left">
+                                    <p className="font-bold text-md text-slate-800">{creator.collections.length}</p>
+                                    <p className="text-sm text-slate-500">Collections</p>
+                                </div>
+                                <div className="text-center sm:text-left">
+                                    <p className="font-bold text-md text-slate-800">{creator._count.followers.toLocaleString()}</p>
+                                    <p className="text-sm text-slate-500">Followers</p>
+                                </div>
+                            </div>
+
+                             {/* Bio */}
+                            <div className="text-center sm:text-left mt-4">
+                                <p className="font-semibold text-slate-900">{creator.fullName}</p>
+                                {creator.bio && <p className="text-md text-slate-700">{creator.bio}</p>}
+                            </div>
+                        </div>
                     </div>
-                    
                 </section>
 
                 <div className="border-b border-slate-200">

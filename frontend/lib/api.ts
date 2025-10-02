@@ -188,3 +188,21 @@ export const getCreatorCollections = (username: string, cursor?: string) => {
 export const getCreatorProducts = (username: string) => {
     return fetcher(`/public/creators/${username}/products`);
 };
+
+// ++ THIS IS THE NEW FUNCTION THAT WAS MISSING ++
+export const getBulkFollowStatus = (creatorIds: string[], userId: string) => {
+    // We add checks to prevent unnecessary API calls
+    if (!userId || !Array.isArray(creatorIds) || creatorIds.length === 0) {
+        return Promise.resolve({});
+    }
+    return fetcher(`/users/${userId}/bulk-follow-status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ creatorIds }),
+    });
+};
+
+export const getHomepageFeed = (cursor?: string) => {
+    const url = cursor ? `/public/home?cursor=${cursor}` : '/public/home';
+    return fetcher(url);
+};
